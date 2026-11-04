@@ -2716,6 +2716,8 @@ void GameList_render(SDL_Surface* screen, int lastScreen,
 	int look = sw_list ? -1 : GameList_lookTab();
 	bool at_root = look >= 0;
 	MenuTabId tab = at_root ? (MenuTabId)look : MenuTabs_current();
+	// the Consoles tab's rows: Appearance > Console text color (color 8) instead of List text
+	UI_setListTextColorOverride(at_root && tab == MENU_TAB_CONSOLES ? &THEME_COLOR8_255 : NULL);
 	// None (a game list's Layouts > List art, or the Consoles tab's Layouts > Consoles background): a plain list on
 	// black, no game art, controller or background picture
 	bool plain = at_root ? tab == MENU_TAB_CONSOLES && CFG_getConsoleArt() == CONSOLE_ART_NONE
@@ -3084,6 +3086,7 @@ void GameList_render(SDL_Surface* screen, int lastScreen,
 		UI_renderCenteredMessage(screen, GameList_emptyText());
 		list_body_clear = false;
 	}
+	UI_setListTextColorOverride(NULL);
 	// waking from sleep fades in from black, an empty list ("Empty folder") too, as Home, the Grid and the rows do
 	if (lastScreen == SCREEN_OFF)
 		GFX_animateSurfaceOpacity(blackBG, 0, 0, screen->w, screen->h, 255, 0, CFG_getMenuTransitions() ? 200 : 20,

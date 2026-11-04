@@ -1,7 +1,5 @@
-// Per-device text sizes, tuned by eye page by page (the log and the reasons: .dev/TEXT_SIZES.md). Each entry is the
-// text's size in screen px on the Brick (3.2" 1024x768), the Brick Pro (3.95" 1024x768) and the Smart Pro family
-// (4.96" 1280x720), set on each device on its own; once the devices' values follow a pattern they can fold back into
-// the UI scale. Header-only and SDL-free: host-tested by tests/test_ui_scale.c.
+// Text sizes for the Brick / Brick Hammer (3.2" 1024x768). The brickpro/smartpro fields are kept so existing
+// TextPx initializers still compile; TextPx_for always uses .brick. Header-only and SDL-free.
 #ifndef UI_TEXT_SIZES_H
 #define UI_TEXT_SIZES_H
 
@@ -12,8 +10,8 @@ typedef struct {
 } TextPx;
 
 static inline float TextPx_for(TextPx t, UIDevice d) {
-	return d == UI_DEVICE_BRICK ? t.brick : d == UI_DEVICE_BRICKPRO ? t.brickpro
-																	: t.smartpro;
+	(void)d;
+	return t.brick;
 }
 
 // Home's stats strip (the "This month" and "Most played" lines). Was 27 on the Brick (2026-10-07: 30, then 33); the

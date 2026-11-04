@@ -54,6 +54,10 @@ SDL_Color UI_accent(void) {
 	return UI_accentOverride(&rgb) ? opaque(rgb) : uintToColour(THEME_COLOR1_255);
 }
 
+SDL_Color UI_titleText(void) {
+	return opaque(THEME_COLOR8_255 >> 8);
+}
+
 SDL_Color UI_onAccent(void) {
 	uint32_t rgb;
 	return UI_accentOverride(&rgb) ? opaque(UI_onAccentFor(rgb)) : uintToColour(THEME_COLOR5_255);

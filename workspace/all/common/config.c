@@ -35,6 +35,8 @@ uint32_t THEME_COLOR4_255;
 uint32_t THEME_COLOR5_255;
 uint32_t THEME_COLOR6_255;
 uint32_t THEME_COLOR7_255;
+uint32_t THEME_COLOR8_255 = CFG_DEFAULT_COLOR8;
+static bool consoleColorLoaded = false; // color8 in the file; else it follows color1 (pre-color8 configs)
 
 void CFG_defaults(NextUISettings* cfg) {
 	if (!cfg)
@@ -49,6 +51,7 @@ void CFG_defaults(NextUISettings* cfg) {
 		.color5_255 = CFG_DEFAULT_COLOR5,
 		.color6_255 = CFG_DEFAULT_COLOR6,
 		.color7_255 = CFG_DEFAULT_COLOR7,
+		.color8_255 = CFG_DEFAULT_COLOR8,
 		.menuStyle = {CFG_DEFAULT_MENUSTYLE_FOR(MENU_CAT_CONSOLES), CFG_DEFAULT_MENUSTYLE_FOR(MENU_CAT_COLLECTIONS),
 					  CFG_DEFAULT_MENUSTYLE_FOR(MENU_CAT_TOOLS)},
 		.gameListStyle = CFG_DEFAULT_GAMELISTSTYLE,
@@ -138,6 +141,7 @@ void CFG_init(FontLoad_callback_t cb, ColorSet_callback_t ccb) {
 	settings.onFontChange = cb;
 	settings.onColorSet = ccb;
 	bool fontLoaded = false;
+	consoleColorLoaded = false;
 	cfg_loading = true; // loading must never write the file it is reading
 
 	char settingsPath[MAX_PATH];
@@ -154,8 +158,10 @@ void CFG_init(FontLoad_callback_t cb, ColorSet_callback_t ccb) {
 				fontLoaded = true;
 				continue;
 			}
-			if (strncmp(line, "color", 5) == 0 && line[5] >= '1' && line[5] <= '7' && line[6] == '=') {
+			if (strncmp(line, "color", 5) == 0 && line[5] >= '1' && line[5] <= '8' && line[6] == '=') {
 				CFG_setColor(line[5] - '0', RGBA_parseHex(line + 7));
+				if (line[5] == '8')
+					consoleColorLoaded = true;
 				continue;
 			}
 			if (sscanf(line, "showclock=%i", &temp_value) == 1) {
@@ -481,6 +487,7 @@ void CFG_init(FontLoad_callback_t cb, ColorSet_callback_t ccb) {
 	CFG_setColor(5, CFG_getColor(5));
 	CFG_setColor(6, CFG_getColor(6));
 	CFG_setColor(7, CFG_getColor(7));
+	CFG_setColor(8, consoleColorLoaded ? CFG_getColor(8) : CFG_getColor(1));
 	// avoid reloading the font if not neccessary
 	if (!fontLoaded)
 		CFG_setFontId(CFG_getFontId());
@@ -527,6 +534,8 @@ uint32_t CFG_getColor(int color_id) {
 		return settings.color6_255;
 	case 7:
 		return settings.color7_255;
+	case 8:
+		return settings.color8_255;
 	default:
 		return 0;
 	}
@@ -561,6 +570,10 @@ void CFG_setColor(int color_id, uint32_t color) {
 	case 7:
 		settings.color7_255 = color;
 		THEME_COLOR7_255 = settings.color7_255;
+		break;
+	case 8:
+		settings.color8_255 = color;
+		THEME_COLOR8_255 = settings.color8_255;
 		break;
 	default:
 		break;
@@ -1292,6 +1305,8 @@ void CFG_get(const char* key, char* value) {
 		sprintf(value, "\"0x%08X\"", CFG_getColor(6));
 	} else if (strcmp(key, "color7") == 0) {
 		sprintf(value, "\"0x%08X\"", CFG_getColor(7));
+	} else if (strcmp(key, "color8") == 0) {
+		sprintf(value, "\"0x%08X\"", CFG_getColor(8));
 	} else if (strcmp(key, "showclock") == 0) {
 		sprintf(value, "%i", CFG_getShowClock());
 	} else if (strcmp(key, "clock24h") == 0) {
@@ -1423,6 +1438,7 @@ static int CFG_serialize(char* buf, size_t cap) {
 	EMIT("color5=0x%08X\n", settings.color5_255);
 	EMIT("color6=0x%08X\n", settings.color6_255);
 	EMIT("color7=0x%08X\n", settings.color7_255);
+	EMIT("color8=0x%08X\n", settings.color8_255);
 	EMIT("showclock=%i\n", settings.showClock);
 	EMIT("clock24h=%i\n", settings.clock24h);
 	EMIT("batteryperc=%i\n", settings.showBatteryPercent);
@@ -1685,6 +1701,7 @@ void CFG_print(void) {
 	printf("\t\"color5\": \"0x%08X\",\n", settings.color5_255);
 	printf("\t\"color6\": \"0x%08X\",\n", settings.color6_255);
 	printf("\t\"color7\": \"0x%08X\",\n", settings.color7_255);
+	printf("\t\"color8\": \"0x%08X\",\n", settings.color8_255);
 	printf("\t\"showclock\": %i,\n", settings.showClock);
 	printf("\t\"clock24h\": %i,\n", settings.clock24h);
 	printf("\t\"batteryperc\": %i,\n", settings.showBatteryPercent);

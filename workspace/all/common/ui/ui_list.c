@@ -378,8 +378,14 @@ SDL_Texture* UI_listItemMarqueeHoldSprite(const ScrollTextState* state, TTF_Font
 	return tex;
 }
 
+static const uint32_t* list_text_override = NULL;
+void UI_setListTextColorOverride(const uint32_t* rgba_255) {
+	list_text_override = rgba_255;
+}
 SDL_Color UI_getListTextColor(bool selected) {
-	return selected ? UI_onAccent() : uintToColour(THEME_COLOR4_255);
+	if (selected)
+		return UI_onAccent();
+	return uintToColour(list_text_override ? *list_text_override : THEME_COLOR4_255);
 }
 
 ListItemPos UI_renderListItemPill(SDL_Surface* screen, ListLayout* layout,

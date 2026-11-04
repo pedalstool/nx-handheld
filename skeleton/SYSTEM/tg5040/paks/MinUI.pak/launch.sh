@@ -42,13 +42,8 @@ mkdir -p "$USERDATA_PATH"
 mkdir -p "$SHARED_USERDATA_PATH/.minui"
 
 export TRIMUI_MODEL=`strings /usr/trimui/bin/MainUI | grep ^Trimui`
-if [ "$TRIMUI_MODEL" = "Trimui Brick" ]; then
-	export DEVICE="brick"
-elif [ "$TRIMUI_MODEL" = "Trimui Brick Pro" ]; then
-	export DEVICE="brickpro"
-else
-	export DEVICE="smartpro"
-fi
+# Brick / Brick Hammer only in this fork
+export DEVICE="brick"
 
 export IS_NEXT="yes"
 
@@ -159,11 +154,6 @@ if [ -d "$OSD_SRC_MODEL" ] && ! grep -q " $OSD_DST " /proc/mounts; then
 	if cp -r "$OSD_SRC/." "$OSD_STAGE/" && cp -r "$OSD_SRC_MODEL/." "$OSD_STAGE/"; then
 		chmod +x "$OSD_STAGE/trimui_osdd" "$OSD_STAGE/trimui_osdd.xbox" "$OSD_STAGE"/*.sh \
 			"$OSD_STAGE"/widgets/*/*.sh 2> /dev/null
-		# Recolour the daemon's active slider / toast frame images in the
-		# staged copy to the theme's primary accent (no-op for the default
-		# theme; the white focus ring is left as shipped). Must run before
-		# trimui_osdd loads its images.
-		"$SYSTEM_PATH/bin/osdmusic.elf" --tint-osd "$OSD_STAGE" "$OSD_STAGE" 2> /dev/null
 		mount -t overlay overlay \
 			-o ro,lowerdir="$OSD_STAGE:$OSD_DST" "$OSD_DST" \
 			|| touch /tmp/nx_osd_mount_failed
@@ -223,12 +213,6 @@ nx_update_logs_path() {
 	[ -d "$LOGS_PATH" ] || mkdir -p "$LOGS_PATH"
 }
 nx_update_logs_path
-# musicplayerd runs for the whole session, so its log cannot live in the
-# per-launch tmpfs dir (the wipe would unlink its open file); when debug
-# logging is off it goes to /dev/null instead.
-MPD_LOG=/dev/null
-[ "$NX_DEBUG_LOGGING" = "1" ] && MPD_LOG="$LOGS_PATH/music-playerd.txt"
-musicplayerd.elf </dev/null >> "$MPD_LOG" 2>&1 &
 
 # Boot-time radio/ssh init below is backgrounded; the launcher runs the CPU at
 # full range until all of it has exited, polling this marker (20 s fallback —
@@ -319,16 +303,13 @@ while [ -f $EXEC_PATH ]; do
 	fi
 
 	if [ -f "/tmp/poweroff" ]; then
-		musicplayerctl.elf shutdown >/dev/null 2>&1 || true
 		poweroff_next
 		exit 0
 	fi
 	if [ -f "/tmp/reboot" ]; then
-		musicplayerctl.elf shutdown >/dev/null 2>&1 || true
 		reboot_next
 		exit 0
 	fi
 done
 
-musicplayerctl.elf shutdown >/dev/null 2>&1 || true
 poweroff_next # just in case

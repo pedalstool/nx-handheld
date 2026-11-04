@@ -112,6 +112,8 @@ int UI_calcListPillWidth(TTF_Font* font, const char* text, char* truncated,
 						 int max_width, int prefix_width);
 void UI_drawListItemBg(SDL_Surface* dst, SDL_Rect* rect, bool selected);
 SDL_Color UI_getListTextColor(bool selected);
+// Unselected row text in *rgba_255 (packed 0xRRGGBBAA, e.g. &THEME_COLOR8_255) instead of List text; NULL clears.
+void UI_setListTextColorOverride(const uint32_t* rgba_255);
 // The List drawn on the GPU (nextui's game lists): the selection pill (UI_drawListItemBg's) and a row's text
 // (UI_renderListItemText's without a marquee, UI_renderListItemTextDimSuffix's) added as sprites over the screen. False
 // when one couldn't be (an uncacheable text): the caller draws it the software way.

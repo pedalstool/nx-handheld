@@ -37,7 +37,7 @@
 // Configuration
 // ============================================
 
-#define UPDATER_REPO_OWNER "nx-redux"
+#define UPDATER_REPO_OWNER "pedalstool"
 #define UPDATER_REPO_NAME "nx-handheld"
 // Web endpoint that 302-redirects to /releases/tag/<TAG>; unlike
 // api.github.com it is not subject to the 60 req/hour per-IP rate limit.

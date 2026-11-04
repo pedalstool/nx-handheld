@@ -400,8 +400,8 @@ static int is_brickpro = 0;
 
 void InitSettings(void) {
 	char* device = getenv("DEVICE");
-	is_brick = exactMatch("brick", device);
-	is_brickpro = exactMatch("brickpro", device);
+	is_brick = 1;
+	is_brickpro = 0;
 
 	sprintf(SettingsPath, "%s/msettings.bin", getenv("USERDATA_PATH"));
 
@@ -670,8 +670,8 @@ void InitSettings(void) {
 // Falls back to InitSettings when there is no host yet.
 void InitSettingsNoApply(void) {
 	char* device = getenv("DEVICE");
-	is_brick = exactMatch("brick", device);
-	is_brickpro = exactMatch("brickpro", device);
+	is_brick = 1;
+	is_brickpro = 0;
 	sprintf(SettingsPath, "%s/msettings.bin", getenv("USERDATA_PATH"));
 
 	shm_fd = shm_open(SHM_KEY, O_RDWR, 0644);

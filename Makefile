@@ -14,12 +14,12 @@ endif
 endif
 
 ifeq (,$(PLATFORMS))
-PLATFORMS = tg5040 tg5050
+PLATFORMS = tg5040
 endif
 
 # Device variants: device=platform,overlay_res,osd_res
-# Each device produces a separate release zip.
-DEVICES = brick=tg5040,768p,1024x768 brickpro=tg5040,768p,1024x768 smartpro=tg5040,720p,1280x720 smartpros=tg5050,720p,1280x720
+# Brick-only fork (Trimui Brick / Brick Hammer share DEVICE=brick).
+DEVICES = brick=tg5040,768p,1024x768
 
 # Pinned upstream commits — update these when upgrading to a new version
 DRASTIC_REPO=https://github.com/trngaje/advanced_drastic
@@ -55,12 +55,10 @@ export MAKEFLAGS=--no-print-directory
 
 ifeq (,$(PLATFORM)$(DEVICE))
 deploy:
-	$(error DEVICE or PLATFORM is required for deploy (e.g. make deploy DEVICE=brickpro))
+	$(error DEVICE or PLATFORM is required for deploy (e.g. make deploy DEVICE=brick))
 else
-# Payloads are per-device, not per-platform: a tg5040 zip built for smartpro
-# carries only osd-smartpro, so pushing it to a Brick Pro would leave that
-# device without an OSD overlay. DEVICE= names the payload directly; PLATFORM=
-# resolves to that platform's first entry in DEVICES and says which it picked.
+# Payloads are per-device. DEVICE= names the payload; PLATFORM= resolves to that
+# platform's first entry in DEVICES.
 deploy: setup $(PLATFORMS) special package
 	@dev="$(DEVICE)"; \
 	if [ -n "$$dev" ] && [ -n "$(PLATFORM)" ]; then \
@@ -134,21 +132,13 @@ system:
 	cp ./workspace/all/minarch/build/$(PLATFORM)/minarch.elf ./build/SYSTEM/$(PLATFORM)/bin/
 	cp ./workspace/all/nextval/build/$(PLATFORM)/nextval.elf ./build/SYSTEM/$(PLATFORM)/bin/
 	cp ./workspace/all/settings/build/$(PLATFORM)/settings.elf ./build/SYSTEM/$(PLATFORM)/paks/Tools/Settings.pak/
-	cp ./workspace/all/musicplayer/build/$(PLATFORM)/musicplayer.elf ./build/SYSTEM/$(PLATFORM)/paks/Tools/Music\ Player.pak/
-	cp ./workspace/all/musicplayer/build/$(PLATFORM)/musicplayerd.elf ./build/SYSTEM/$(PLATFORM)/bin/
-	cp ./workspace/all/musicplayer/build/$(PLATFORM)/musicplayerctl.elf ./build/SYSTEM/$(PLATFORM)/bin/
-	cp ./workspace/all/mediaplayer/build/$(PLATFORM)/mediaplayer.elf ./build/SYSTEM/$(PLATFORM)/paks/Tools/Media\ Player.pak/
-	cp ./workspace/all/imageviewer/build/$(PLATFORM)/imageviewer.elf ./build/SYSTEM/$(PLATFORM)/paks/Tools/Image\ Viewer.pak/
 	cp ./workspace/all/sync/build/$(PLATFORM)/sync.elf ./build/SYSTEM/$(PLATFORM)/paks/Tools/Device\ Sync.pak/
 	cp ./workspace/all/scraper/build/$(PLATFORM)/scraper.elf ./build/SYSTEM/$(PLATFORM)/paks/Tools/Artwork\ Manager.pak/
-ifneq (,$(filter $(PLATFORM),tg5040 tg5050))
+ifeq ($(PLATFORM), tg5040)
 	# Fast shutdown (and limbo fix on tg5040)
 	cp ./workspace/$(PLATFORM)/poweroff_next/build/$(PLATFORM)/poweroff_next.elf ./build/SYSTEM/$(PLATFORM)/bin/poweroff_next
 	# Audio resampling
 	cp ./workspace/all/minarch/build/$(PLATFORM)/libsamplerate.* ./build/SYSTEM/$(PLATFORM)/lib/
-
-	# fdk-aac for music player
-	cp ./workspace/all/musicplayer/include/fdk_aac/lib/libfdk-aac.so* ./build/SYSTEM/$(PLATFORM)/lib/
 
 	# ROM decompression and SRM support
 	cp ./workspace/all/minarch/build/$(PLATFORM)/libzip.* ./build/SYSTEM/$(PLATFORM)/lib/
@@ -179,9 +169,7 @@ ifneq (,$(filter $(PLATFORM),tg5040 tg5050))
 	cp ./workspace/all/cheatdb/build/$(PLATFORM)/cheatdb.elf ./build/SYSTEM/$(PLATFORM)/paks/Tools/Xtras.pak/catalog/cheatdb/pak/
 
 	# Netplay pre-launch wizard (run bare off PATH by netplay-prelaunch.sh and the
-	# DC/N64 netplay helpers);
-	# gated here, not with the other SYSTEM bin copies, because it is only built
-	# for tg5040/tg5050 (see workspace/Makefile).
+	# DC/N64 netplay helpers)
 	cp ./workspace/all/netplay-wizard/build/$(PLATFORM)/netplay.elf ./build/SYSTEM/$(PLATFORM)/bin/
 	# USB cable netplay link daemon (started/stopped by netplay.elf)
 	cp ./workspace/all/usblink/build/$(PLATFORM)/usblink.elf ./build/SYSTEM/$(PLATFORM)/bin/
@@ -192,20 +180,16 @@ ifneq (,$(filter $(PLATFORM),tg5040 tg5050))
 	# the Emulator Settings tool)
 	cp ./workspace/all/emu-options/build/$(PLATFORM)/options.elf ./build/SYSTEM/$(PLATFORM)/bin/
 
-	# OSD widget helper (get/set volume, mute, brightness, fan via libmsettings);
+	# OSD widget helper (get/set volume, mute, brightness via libmsettings);
 	# run by the trimui_osdd widget scripts under skeleton/SYSTEM/osd. Built
 	# from source here rather than shipped as a prebuilt in skeleton/ so a
 	# libmsettings struct change cannot leave a stale binary behind.
 	cp ./workspace/all/osdctl/build/$(PLATFORM)/osdctl.elf ./build/SYSTEM/$(PLATFORM)/bin/osdctl
-	# Resident renderer behind the OSD Music widget (widgets/app_music/launch.sh)
-	cp ./workspace/all/osdmusic/build/$(PLATFORM)/osdmusic.elf ./build/SYSTEM/$(PLATFORM)/bin/
 	# LD_PRELOAD shim that slows trimui_osdd's idle SDL poll while hidden (see workspace/all/osdwait)
 	cp ./workspace/all/osdwait/build/$(PLATFORM)/libosdwait.so ./build/SYSTEM/$(PLATFORM)/lib/
 
-ifeq ($(PLATFORM), tg5040)
 	# liblz4 for Rewind support
 	cp -L ./workspace/all/minarch/build/$(PLATFORM)/liblz4.so.1 ./build/SYSTEM/$(PLATFORM)/lib/
-endif
 endif
 
 cores: # TODO: can't assume every platform will have the same stock cores (platform should be responsible for copy too)
@@ -310,8 +294,7 @@ common: build system cores prebuilts
 # inside the toolchain image (shared ones with tg5040's). CI builds each in its
 # own cached job and drops the results in workspace/all/prebuilts/output/; locally,
 # `make build-prebuilts PLATFORM=...` builds what that platform needs.
-PREBUILTS_tg5040 = ffplay rsync sdl2-drastic
-PREBUILTS_tg5050 = sdl2-drastic tun-ko
+PREBUILTS_tg5040 = rsync sdl2-drastic
 
 build-prebuilts:
 	@for p in $(PREBUILTS_$(PLATFORM)); do \
@@ -325,8 +308,7 @@ endif
 	docker run --rm -v $(CURDIR)/workspace:/root/workspace ghcr.io/loveretro/$(PLATFORM)-toolchain:latest \
 		/bin/bash -c '. ~/.bashrc && cd /root/workspace && PLATFORM=$(PLATFORM) bash all/prebuilts/$(PREBUILT).sh'
 
-PREBUILT_FILES_tg5040 = SYSTEM/shared/bin/ffplay SYSTEM/shared/bin/rsync
-PREBUILT_FILES_tg5050 = SYSTEM/tg5050/lib/modules/tun.ko
+PREBUILT_FILES_tg5040 = SYSTEM/shared/bin/rsync
 PREBUILT_FILES = $(PREBUILT_FILES_$(PLATFORM)) \
 	SYSTEM/$(PLATFORM)/paks/Emus/NDS.pak/libs/libSDL2-2.0.so.0
 
@@ -353,7 +335,7 @@ compile-commands:
 	# Hand-written stubs for glibc APIs live in scripts/clangd/include.
 	@if [ ! -f .clangd-shim/.sysroot-extracted ] && command -v docker >/dev/null 2>&1; then \
 		mkdir -p .clangd-shim/dbus; \
-		docker run --rm -v "$(CURDIR)/.clangd-shim":/out ghcr.io/loveretro/tg5050-toolchain:latest /bin/bash -c \
+		docker run --rm -v "$(CURDIR)/.clangd-shim":/out ghcr.io/loveretro/tg5040-toolchain:latest /bin/bash -c \
 			'SYSROOT=/opt/aarch64-nextui-linux-gnu/aarch64-nextui-linux-gnu/libc/usr; \
 			 cp $$SYSROOT/include/dbus-1.0/dbus/*.h /out/dbus/ && \
 			 cp $$SYSROOT/lib/dbus-1.0/include/dbus/dbus-arch-deps.h /out/dbus/ && \
@@ -370,28 +352,18 @@ compile-commands:
 		grep -v 'libretro-common' | \
 		grep -v 'libchdr' | \
 		grep -v 'rcheevos/src' | \
-		grep -v 'mediaplayer/include/ffplay' | \
 	while read -r file; do \
 		extra_flags=""; \
 		case "$$file" in \
 			workspace/all/include/*) \
 				extra_flags="\"-I$(CURDIR)/workspace/all/include\", \"-I$(CURDIR)/workspace/all/include/mbedtls_lib\", \"-DMBEDTLS_CONFIG_FILE=<mbedtls_config.h>\", "; \
 				;; \
-			workspace/all/musicplayer/include/libopus/*) \
-				extra_flags="\"-I$(CURDIR)/workspace/all/musicplayer/include/libopus\", \"-I$(CURDIR)/workspace/all/musicplayer/include/libopus/include\", \"-I$(CURDIR)/workspace/all/musicplayer/include/libopus/src\", \"-I$(CURDIR)/workspace/all/musicplayer/include/libopus/celt\", \"-I$(CURDIR)/workspace/all/musicplayer/include/libopus/silk\", \"-I$(CURDIR)/workspace/all/musicplayer/include/libopus/silk/float\", \"-I$(CURDIR)/workspace/all/musicplayer/include/libogg\", \"-DOPUS_BUILD\", \"-DVAR_ARRAYS\", \"-DHAVE_LRINTF\", "; \
-				;; \
-			workspace/all/musicplayer/*) \
-				extra_flags="\"-I$(CURDIR)/workspace/all/musicplayer\", \"-I$(CURDIR)/workspace/all/musicplayer/include\", \"-I$(CURDIR)/workspace/all/musicplayer/include/fdk_aac\", \"-I$(CURDIR)/workspace/all/musicplayer/include/yxml\", \"-I$(CURDIR)/workspace/all/musicplayer/include/libogg\", \"-I$(CURDIR)/workspace/all/musicplayer/include/libopus/include\", \"-I$(CURDIR)/workspace/all/musicplayer/include/opusfile/include\", \"-I$(CURDIR)/workspace/all/include\", \"-I$(CURDIR)/workspace/all/include/mbedtls_lib\", \"-I$(CURDIR)/workspace/all/musicplayer/audio\", \"-DMBEDTLS_CONFIG_FILE=<mbedtls_config.h>\", \"-DOPUS_BUILD\", \"-DHAVE_LRINTF\", \"-DOP_DISABLE_HTTP\", \"-DOP_DISABLE_FLOAT_API\", "; \
-				;; \
-			workspace/all/mediaplayer/*) \
-				extra_flags="\"-I$(CURDIR)/workspace/all/mediaplayer\", \"-I$(CURDIR)/workspace/all/include\", \"-I$(CURDIR)/workspace/all/include/mbedtls_lib\", \"-DMBEDTLS_CONFIG_FILE=<mbedtls_config.h>\", \"-DOPUS_BUILD\", \"-DHAVE_LRINTF\", \"-DOP_DISABLE_HTTP\", \"-DOP_DISABLE_FLOAT_API\", "; \
-				;; \
 		esac; \
 		if [ "$$first" = "1" ]; then first=0; else echo ',' >> compile_commands.json; fi; \
-		printf '  {"directory": "%s", "file": "%s/%s", "arguments": ["clang", "-std=gnu99", "-DUSE_SDL2", "-DUSE_GLES", "-DGL_GLEXT_PROTOTYPES", "-DPLATFORM=\\"tg5040\\"", "-DHAS_CHEEVOS", "-DRC_CLIENT_SUPPORTS_HASH", "-DRC_DISABLE_LUA", "-DBUILD_DATE=\\"dev\\"", "-DBUILD_HASH=\\"dev\\"", %s"-I%s/workspace/all/common", "-I%s/workspace/all/common/ui", "-I%s/workspace/all/nextui", "-I%s/workspace/all/minarch", "-I%s/workspace/all/minarch/libretro-common/include", "-I%s/workspace/all/netplay", "-I%s/workspace/all/settings", "-I%s/workspace/all/libgametimedb", "-I%s/.clangd-shim", "-I%s/scripts/clangd/include", "-I%s/workspace/tg5040/platform", "-I%s/workspace/tg5050/platform", "-I%s/workspace/tg5040/libmsettings", "-I%s/workspace/tg5050/libmsettings", "-I/opt/homebrew/include", "-c", "%s/%s"]}' \
+		printf '  {"directory": "%s", "file": "%s/%s", "arguments": ["clang", "-std=gnu99", "-DUSE_SDL2", "-DUSE_GLES", "-DGL_GLEXT_PROTOTYPES", "-DPLATFORM=\\"tg5040\\"", "-DHAS_CHEEVOS", "-DRC_CLIENT_SUPPORTS_HASH", "-DRC_DISABLE_LUA", "-DBUILD_DATE=\\"dev\\"", "-DBUILD_HASH=\\"dev\\"", %s"-I%s/workspace/all/common", "-I%s/workspace/all/common/ui", "-I%s/workspace/all/nextui", "-I%s/workspace/all/minarch", "-I%s/workspace/all/minarch/libretro-common/include", "-I%s/workspace/all/netplay", "-I%s/workspace/all/settings", "-I%s/workspace/all/libgametimedb", "-I%s/.clangd-shim", "-I%s/scripts/clangd/include", "-I%s/workspace/tg5040/platform", "-I%s/workspace/tg5040/libmsettings", "-I/opt/homebrew/include", "-c", "%s/%s"]}' \
 			"$(CURDIR)" "$(CURDIR)" "$$file" \
 			"$$extra_flags" \
-			"$(CURDIR)" "$(CURDIR)" "$(CURDIR)" "$(CURDIR)" "$(CURDIR)" "$(CURDIR)" "$(CURDIR)" "$(CURDIR)" "$(CURDIR)" "$(CURDIR)" "$(CURDIR)" "$(CURDIR)" "$(CURDIR)" "$(CURDIR)" \
+			"$(CURDIR)" "$(CURDIR)" "$(CURDIR)" "$(CURDIR)" "$(CURDIR)" "$(CURDIR)" "$(CURDIR)" "$(CURDIR)" "$(CURDIR)" "$(CURDIR)" "$(CURDIR)" "$(CURDIR)" \
 			"$(CURDIR)" "$$file" >> compile_commands.json; \
 	done
 	@echo '' >> compile_commands.json

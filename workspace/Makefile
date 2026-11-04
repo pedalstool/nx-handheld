@@ -20,10 +20,6 @@ ifeq ($(PLATFORM), tg5040)
 	cd ./$(PLATFORM)/btmanager && make all
 	cd ./$(PLATFORM)/poweroff_next/ && make
 endif
-ifeq ($(PLATFORM), tg5050)
-	cd ./$(PLATFORM)/btmanager && make all
-	cd ./$(PLATFORM)/poweroff_next/ && make
-endif
 	cd ./$(PLATFORM)/libmsettings && make
 	cd ./$(PLATFORM) && make early # eg. other libs
 	cd ./$(PLATFORM)/keymon && make
@@ -37,27 +33,23 @@ endif
 	cd ./all/taskset/ && make
 	cd ./all/nextval/ && make
 	cd ./all/settings/ && make
-ifneq (,$(filter $(PLATFORM),tg5040 tg5050))
+ifeq ($(PLATFORM), tg5040)
 	cd ./all/ratools/ && make
 endif
 	cd ./all/audiomon && make all
 	cd ./all/show2/ && make
 	cd ./all/screenshot/ && make
 	cd ./all/screenrecorder/ && make
-	cd ./all/musicplayer/ && make all
-	cd ./all/mediaplayer/ && make
-	cd ./all/imageviewer/ && make
 	# native PICO-8: bridge core + LD_PRELOAD shim + the child's SDL2 (after minarch: needs its libretro-common)
 	cd ./all/pico8native/ && make
 	cd ./all/sync/ && make
-ifneq (,$(filter $(PLATFORM),tg5040 tg5050))
+ifeq ($(PLATFORM), tg5040)
 	cd ./all/netplay-wizard/ && make
 	cd ./all/usblink/ && make
 	cd ./all/emu-options/ && make
 	cd ./all/extras/ && make
 	cd ./all/cheatdb/ && make
 	cd ./all/osdctl/ && make
-	cd ./all/osdmusic/ && make
 	cd ./all/osdwait/ && make
 	cd ./all/n64-netplay-server/ && make
 endif
@@ -89,10 +81,6 @@ ifeq ($(PLATFORM), tg5040)
 	cd ./$(PLATFORM)/btmanager && make clean
 	cd ./$(PLATFORM)/poweroff_next/ && make clean
 endif
-ifeq ($(PLATFORM), tg5050)
-	cd ./$(PLATFORM)/btmanager && make clean
-	cd ./$(PLATFORM)/poweroff_next/ && make clean
-endif
 	cd ./$(PLATFORM)/libmsettings && make clean
 	cd ./all/nextui/ && make clean
 	cd ./all/minarch/ && make clean
@@ -105,9 +93,6 @@ endif
 	cd ./all/screenshot/ && make clean
 	cd ./all/screenrecorder/ && make clean
 	cd ./all/audiomon/ && make clean
-	cd ./all/musicplayer/ && make clean
-	cd ./all/mediaplayer/ && make clean
-	cd ./all/imageviewer/ && make clean
 	cd ./all/pico8native/ && make clean
 	cd ./all/sync/ && make clean
 	cd ./all/netplay-wizard/ && make clean
@@ -116,7 +101,6 @@ endif
 	cd ./all/extras/ && make clean
 	cd ./all/cheatdb/ && make clean
 	cd ./all/osdctl/ && make clean
-	cd ./all/osdmusic/ && make clean
 	cd ./all/osdwait/ && make clean
 	cd ./all/scraper/ && make clean
 	cd ./$(PLATFORM) && make clean

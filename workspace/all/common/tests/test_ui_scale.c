@@ -26,11 +26,11 @@ static void test_quantize(void) {
 
 static void test_device_table(void) {
 	assert(UIScale_forDevice("brick") == 3.0f);
-	assert(UIScale_forDevice("brickpro") == 2.5f);
-	assert(UIScale_forDevice("smartpros") == 2.25f);
-	assert(UIScale_forDevice("smartpro") == 2.25f);
-	assert(UIScale_forDevice("") == 2.25f);
-	assert(UIScale_forDevice(NULL) == 2.25f);
+	assert(UIScale_forDevice("brickpro") == 3.0f);
+	assert(UIScale_forDevice("smartpros") == 3.0f);
+	assert(UIScale_forDevice("smartpro") == 3.0f);
+	assert(UIScale_forDevice("") == 3.0f);
+	assert(UIScale_forDevice(NULL) == 3.0f);
 }
 
 static void test_dev_override(void) {
@@ -51,7 +51,7 @@ static void test_dev_override(void) {
 	assert(UIScale_readDevOverride(p) == 0.0f);
 	assert(UIScale_resolveDevice("brick", p) == 3.0f); // the old key never overrides
 	unlink(p);
-	assert(UIScale_resolveDevice("brickpro", p) == 2.5f); // missing file
+	assert(UIScale_resolveDevice("brick", p) == 3.0f); // missing file
 	assert(UIScale_resolveDevice("brick", NULL) == 3.0f);
 }
 
@@ -67,13 +67,10 @@ static void test_pick_sheet(void) {
 
 static void test_text_sizes(void) {
 	assert(UIScale_deviceIndex("brick") == UI_DEVICE_BRICK);
-	assert(UIScale_deviceIndex("brickpro") == UI_DEVICE_BRICKPRO);
-	assert(UIScale_deviceIndex("smartpros") == UI_DEVICE_SMARTPRO);
-	assert(UIScale_deviceIndex("smartpro") == UI_DEVICE_SMARTPRO);
-	assert(UIScale_deviceIndex(NULL) == UI_DEVICE_SMARTPRO);
+	assert(UIScale_deviceIndex("brickpro") == UI_DEVICE_BRICK);
+	assert(UIScale_deviceIndex(NULL) == UI_DEVICE_BRICK);
 	TextPx t = {30, 22, 20};
-	assert(TextPx_for(t, UI_DEVICE_BRICK) == 30 && TextPx_for(t, UI_DEVICE_BRICKPRO) == 22 &&
-		   TextPx_for(t, UI_DEVICE_SMARTPRO) == 20);
+	assert(TextPx_for(t, UI_DEVICE_BRICK) == 30);
 }
 
 int main(void) {

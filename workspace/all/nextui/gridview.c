@@ -249,7 +249,7 @@ static void drawHeader(SDL_Surface* screen, int sel) {
 	SDL_GetClipRect(screen, &clip);
 	SDL_SetClipRect(screen, NULL);
 	TTF_Font* f = UI_pageTitleFont();
-	SDL_Surface* name = f ? GFX_getCachedText(f, (char*)View_displayName(e), COLOR_WHITE) : NULL;
+	SDL_Surface* name = f ? GFX_getCachedText(f, (char*)View_displayName(e), UI_titleText()) : NULL;
 	char count[32];
 	GameInfo_gamesLabel(Content_consoleGameCount(e), count, sizeof(count));
 	TTF_Font* fc = count[0] ? headerCountFont() : NULL;
@@ -388,8 +388,8 @@ static Uint32 tileStamp(const TileSpec* t, bool lit) {
 	h = View_fnv(h, &t->picture_gen, sizeof(t->picture_gen)); // a re-decoded art may reuse the old pointer
 	h = View_fnv(h, &t->no_count, sizeof(t->no_count));
 	if (lit) {
-		SDL_Color ac = UI_accent();
-		Uint8 rgb[3] = {ac.r, ac.g, ac.b};
+		SDL_Color ac = UI_accent(), tt = UI_titleText();
+		Uint8 rgb[6] = {ac.r, ac.g, ac.b, tt.r, tt.g, tt.b};
 		h = View_fnv(h, rgb, sizeof(rgb));
 		bool ring = CFG_getGridRing(); // Layouts > Grid selection ring
 		h = View_fnv(h, &ring, sizeof(ring));

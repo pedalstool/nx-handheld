@@ -754,8 +754,9 @@ static SDL_Surface* carouselTile(const RowGeo* g, Entry* e, TileKind kind, int w
 	// the lit look's fill (a tool) is in the accent, its content in its ink
 	SDL_Color ac = lit ? UI_accent() : (SDL_Color){0, 0, 0, 0};
 	SDL_Color ink = lit ? UI_onAccent() : (SDL_Color){0, 0, 0, 0};
-	snprintf(key, sizeof(key), "C|%d|%d|%d|%d|%02x%02x%02x%02x%02x%02x|%d|%u|%s|%s", w, h, (int)kind, lit, ac.r,
-			 ac.g, ac.b, ink.r, ink.g, ink.b, state, gen, e->path, View_displayName(e));
+	SDL_Color tt = UI_titleText();
+	snprintf(key, sizeof(key), "C|%d|%d|%d|%d|%02x%02x%02x%02x%02x%02x%02x%02x%02x|%d|%u|%s|%s", w, h, (int)kind, lit,
+			 ac.r, ac.g, ac.b, ink.r, ink.g, ink.b, tt.r, tt.g, tt.b, state, gen, e->path, View_displayName(e));
 	SDL_Surface* s;
 	if (itemFind(key, &s))
 		return s;
@@ -1655,10 +1656,11 @@ static int captionLines(const CapStyle* cs, int name_h, const SegRow* rows, int 
 
 // path: the entry's, so an older caption stands in (cap_allow_stale) only for the same game, not another of the same
 // display name (the same title in two folders, a rename alias) with its play time or trophies
+static bool cap_console = false; // the caption being made is a console's: Console text color (color 8)
 static SDL_Surface* captionSurface(const CapStyle* cs, const char* path, const char* name, const SegRow* rows,
 								   int nrows) {
 	char key[CAPTION_KEY];
-	SDL_Color main = UI_accent(); // the name's colour (the Main color, as the selection elsewhere)
+	SDL_Color main = cap_console ? UI_titleText() : UI_accent(); // the name's colour (the Main color, as the selection elsewhere)
 	int n = snprintf(key, sizeof(key), "%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%02x%02x%02x|%08x|%s|", (int)FIXED_SCALE, cs->w,
 					 cs->max_h, cs->reserve_h, cs->name_lines, cs->gap, cs->left, cs->shadow, cs->right, cs->game,
 					 main.r, main.g, main.b, (unsigned)View_fnvStr(2166136261u, path), name ? name : "");
@@ -1926,7 +1928,10 @@ static SDL_Surface* rowCaption(SDL_Surface* screen, const RowGeo* g, Entry* e, T
 				   false,
 				   carousel || g->kind == ROW_BACKDROP_BOX};
 	*out = cs;
-	return captionSurface(&cs, e->path, View_displayName(e), rows, nrows);
+	cap_console = kind == TILE_LOGO;
+	SDL_Surface* cap = captionSurface(&cs, e->path, View_displayName(e), rows, nrows);
+	cap_console = false;
+	return cap;
 }
 
 // The caption beside a Vertical stack for e (made, or found among the kept ones)
@@ -1936,7 +1941,10 @@ static SDL_Surface* sideCaption(const RowGeo* g, Entry* e, TileKind kind, int w,
 	// a Carousel's name up to 3 lines beside its stack, Backdrop's 2
 	CapStyle cs = {w, body_h, 0, g->kind == ROW_CAROUSEL ? 3 : 2, NX_DPF(STACK_CAPTION_LINE_GAP_DP), true,
 				   g->kind == ROW_BACKDROP_BOX, right, g->kind == ROW_CAROUSEL || g->kind == ROW_BACKDROP_BOX};
-	return captionSurface(&cs, e->path, View_displayName(e), rows, nrows);
+	cap_console = kind == TILE_LOGO;
+	SDL_Surface* cap = captionSurface(&cs, e->path, View_displayName(e), rows, nrows);
+	cap_console = false;
+	return cap;
 }
 
 // Beside a Vertical stack (§8f.4): Backdrop's three rows for both renderings, 3 dp apart, the name on up to two lines;
@@ -3255,7 +3263,7 @@ void RowView_setMarkLit(TileKind kind, float d) {
 		mark_tint = (SDL_Color){255, 255, 255, 255};
 		return;
 	}
-	SDL_Color ac = UI_accent();
+	SDL_Color ac = kind == TILE_LOGO ? UI_titleText() : UI_accent(); // a console's mark: Console text color
 	int base = kind == TILE_LOGO ? TILE_MENU_GREY : 255;
 	Uint8 ch[3];
 	const Uint8 src[3] = {ac.r, ac.g, ac.b};

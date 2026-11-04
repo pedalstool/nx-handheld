@@ -5,9 +5,6 @@
     "timeupdatevalue" : 3000,
     "widgetlist": [
         {
-            "package":"com.trimui.osd.app.musicplayer"
-        },
-        {
             "package":"com.nxredux.osd.toggle.screenshot"
         },
         {

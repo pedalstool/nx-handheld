@@ -1,5 +1,4 @@
-// UI scale — each device's one UI scale, tuned so the UI is the same physical size on every panel, and the hidden
-// uiscale_dev= override used to tune it on hardware. Header-only and SDL-free: included by the platform headers.
+// UI scale — Brick / Brick Hammer only (scale 3.0). Header-only and SDL-free: included by the platform headers.
 // Host-tested by tests/test_ui_scale.c.
 #ifndef UI_SCALE_H
 #define UI_SCALE_H
@@ -24,28 +23,17 @@ static inline float UIScale_quantize(float s) {
 }
 
 typedef enum { UI_DEVICE_BRICK,
-			   UI_DEVICE_BRICKPRO,
-			   UI_DEVICE_SMARTPRO,
 			   UI_DEVICE_COUNT } UIDevice;
 
-// $DEVICE (or a platform's UI_DEVICE_NAME) as a UIDevice; the Smart Pro family and anything unknown are
-// UI_DEVICE_SMARTPRO.
 static inline UIDevice UIScale_deviceIndex(const char* device) {
-	if (device && strcmp(device, "brick") == 0)
-		return UI_DEVICE_BRICK;
-	if (device && strcmp(device, "brickpro") == 0)
-		return UI_DEVICE_BRICKPRO;
-	return UI_DEVICE_SMARTPRO;
+	(void)device;
+	return UI_DEVICE_BRICK;
 }
 
-// Each device's UI scale, tuned by eye so the UI is one physical size on every panel (seeded from the panels'
-// density against the Brick's 400 ppi at 3.0).
+// Brick / Brick Hammer: 3.2" 1024x768, ~400 ppi
 static inline float UIScale_forDevice(const char* device) {
-	if (device && strcmp(device, "brick") == 0)
-		return 3.0f; // 3.2" 1024x768, 400 ppi
-	if (device && strcmp(device, "brickpro") == 0)
-		return 2.5f; // 3.95" 1024x768, 324 ppi (2.4375 by density; 2.5 for rounder sizes, 2026-10-07)
-	return 2.25f;	 // 4.96" 1280x720, 296 ppi (the Smart Pro family)
+	(void)device;
+	return 3.0f;
 }
 
 // Parses one minuisettings.txt line. Returns 1 and stores the quantized value when the line is "uiscale_dev=<float>"

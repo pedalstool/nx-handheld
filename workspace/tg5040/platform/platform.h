@@ -1,4 +1,4 @@
-// tg5040
+// tg5040 — Brick / Brick Hammer only (this fork)
 
 #ifndef PLATFORM_H
 #define PLATFORM_H
@@ -12,18 +12,10 @@
 
 ///////////////////////////////
 
-// Brick and Brick Pro share the 1024x768 panel *resolution* (FIXED_WIDTH/HEIGHT key
-// off is_brick || is_brickpro), but not its size: the Brick's 3.2" panel is 400 ppi, the
-// Brick Pro's 3.95" 324. Each device has its own UI scale (ui_scale.h UIScale_forDevice),
-// tuned so the UI is one physical size on both (and on the Smart Pro). Input still keys
-// off is_brick || is_brickpro: the Brick Pro additionally has analog sticks, two extra
-// shoulder buttons (L4/R4) and a HOME key.
+// Brick and Brick Hammer share DEVICE=brick (1024x768, UI scale 3.0).
 extern int is_brick;
-extern int is_brickpro;
-// The device's UI scale (UIScale_forDevice, or a hand-added uiscale_dev= tuning override),
-// resolved in GFX_init; 0 before then, which FIXED_SCALE reads as the device's.
 extern float ui_scale;
-#define UI_DEVICE_NAME (is_brick ? "brick" : (is_brickpro ? "brickpro" : "smartpro"))
+#define UI_DEVICE_NAME "brick"
 
 ///////////////////////////////
 
@@ -105,40 +97,30 @@ extern float ui_scale;
 #define JOY_R1 5
 #define JOY_L2 JOY_NA
 #define JOY_R2 JOY_NA
-// Brick: 9/10 are the FN1/FN2 keys. Brick Pro: 9/10 are the stick clicks and the
-// FN keys move up to 11/12 (L4/R4).
-#define JOY_L3 (is_brick || is_brickpro ? 9 : JOY_NA)
-#define JOY_R3 (is_brick || is_brickpro ? 10 : JOY_NA)
-#define JOY_L4 (is_brickpro ? 11 : JOY_NA)
-#define JOY_R4 (is_brickpro ? 12 : JOY_NA)
+// Brick FN1/FN2 keys
+#define JOY_L3 9
+#define JOY_R3 10
+#define JOY_L4 JOY_NA
+#define JOY_R4 JOY_NA
 
-// The two extra "function" keys (F1/F2). The Brick has no analog sticks, so they are the
-// L3/R3 joystick buttons; on the Brick Pro the analog sticks take L3/R3 (stick-click), so
-// the function keys move to L4/R4. Paks that act on F1/F2 must use BTN_FN1/BTN_FN2 rather
-// than hard-coding BTN_L3/BTN_R3 — otherwise the toggle lands on the Brick Pro's stick
-// click instead of its F1/F2 key. Other platforms fall back to BTN_L3/R3 (see defines.h).
-#define BTN_FN1 (is_brickpro ? BTN_L4 : BTN_L3)
-#define BTN_FN2 (is_brickpro ? BTN_R4 : BTN_R3)
-// Display name for those keys — the Brick and Brick Pro both physically print "F1"/"F2"
-// (the underlying index differs, L3/R3 vs L4/R4, but the label the user sees does not).
+#define BTN_FN1 BTN_L3
+#define BTN_FN2 BTN_R3
 #define BTN_FN1_NAME "F1"
 #define BTN_FN2_NAME "F2"
-// The Smart Pro shares this platform but has no F keys (BTN_FN1/2 would be its stick
-// clicks), so menu-level FN features must check this at runtime, not compile time.
-#define HAS_FN_KEYS (is_brick || is_brickpro)
+#define HAS_FN_KEYS 1
 
 #define JOY_MENU 8
-#define JOY_HOME (is_brickpro ? 15 : JOY_NA)
+#define JOY_HOME JOY_NA
 #define JOY_POWER 102
-#define JOY_PLUS (is_brick || is_brickpro ? 14 : 128)
-#define JOY_MINUS (is_brick || is_brickpro ? 13 : 129)
+#define JOY_PLUS 14
+#define JOY_MINUS 13
 
 ///////////////////////////////
 
 #define AXIS_L2 2 // ABSZ
 #define AXIS_R2 5 // RABSZ
 
-#define HAS_JOYSTICK (!is_brick)
+#define HAS_JOYSTICK 0
 
 #define AXIS_LX 0 // ABS_X, -30k (left) to 30k (right)
 #define AXIS_LY 1 // ABS_Y, -30k (up) to 30k (down)
@@ -159,8 +141,8 @@ extern float ui_scale;
 ///////////////////////////////
 
 #define FIXED_SCALE (ui_scale > 0 ? ui_scale : UIScale_forDevice(UI_DEVICE_NAME))
-#define FIXED_WIDTH (is_brick || is_brickpro ? 1024 : 1280)
-#define FIXED_HEIGHT (is_brick || is_brickpro ? 768 : 720)
+#define FIXED_WIDTH 1024
+#define FIXED_HEIGHT 768
 #define FIXED_BPP 2
 #define FIXED_DEPTH (FIXED_BPP * 8)
 #define FIXED_PITCH (FIXED_WIDTH * FIXED_BPP)
@@ -181,15 +163,9 @@ extern float ui_scale;
 // right before the power cut without linking the SDL-backed VIB_ layer.
 #define RUMBLE_PATH "/sys/class/gpio/gpio227/value"
 #define RUMBLE_VOLTAGE_PATH "/sys/class/motor/voltage"
-// Motor drive range (microvolts). The Brick Pro's larger motor is unpleasantly
-// strong (and coasts noticeably longer) at the Brick's 3.3 V, so it gets a lower
-// ceiling that every "Vibration strength" level is scaled under. 2.5 V was still
-// felt as too hard at Normal (2026-09-15), then 2.0 V still a touch strong, hence 1.7 V.
 #define RUMBLE_MIN_VOLTAGE 500000
 #define RUMBLE_MAX_VOLTAGE 3300000
-#define RUMBLE_MAX_VOLTAGE_BRICKPRO 1700000
 
-// Brick Pro has 5 zones (f1, f2, top bar, joysticks, triggers), Brick 4, Smart Pro 3
 #define MAX_LIGHTS 5
 
 ///////////////////////////////

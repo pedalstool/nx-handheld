@@ -12,6 +12,7 @@ extern uint32_t THEME_COLOR4_255;
 extern uint32_t THEME_COLOR5_255;
 extern uint32_t THEME_COLOR6_255;
 extern uint32_t THEME_COLOR7_255;
+extern uint32_t THEME_COLOR8_255; // console title text
 
 typedef int (*FontLoad_callback_t)(const char* path);
 typedef int (*ColorSet_callback_t)(void);
@@ -134,6 +135,7 @@ typedef struct
 	uint32_t color4_255;			// not screen mapped
 	uint32_t color5_255;			// not screen mapped
 	uint32_t color6_255;			// not screen mapped
+	uint32_t color8_255;			// console title text, not screen mapped
 	uint32_t color7_255;			// not screen mapped
 	int gameSwitcherScaling;		// enum
 	int menuStyle[MENU_CAT_COUNT];	// MENU_STYLE_* per main menu tab (MENU_CAT_*)
@@ -247,6 +249,7 @@ typedef struct
 #define CFG_DEFAULT_COLOR5 0x000000ffU
 #define CFG_DEFAULT_COLOR6 0xdcdcdcffU
 #define CFG_DEFAULT_COLOR7 0x000000ffU
+#define CFG_DEFAULT_COLOR8 CFG_DEFAULT_COLOR1
 #define CFG_DEFAULT_SHOWCLOCK false
 #define CFG_DEFAULT_CLOCK24H true
 #define CFG_DEFAULT_SHOWBATTERYPERCENT false

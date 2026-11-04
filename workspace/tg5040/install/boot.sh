@@ -10,12 +10,10 @@ SYSTEM_PATH="$SDCARD_PATH/.system"
 export LD_LIBRARY_PATH=/usr/trimui/lib:$LD_LIBRARY_PATH
 export PATH=/usr/trimui/bin:$PATH
 
+# Brick / Brick Hammer only in this fork
+DEVICE="brick"
 TRIMUI_MODEL=`strings /usr/trimui/bin/MainUI | grep ^Trimui`
-if [ "$TRIMUI_MODEL" = "Trimui Brick" ]; then
-	DEVICE="brick"
-elif [ "$TRIMUI_MODEL" = "Trimui Brick Pro" ]; then
-	DEVICE="brickpro"
-fi
+export TRIMUI_MODEL
 
 # only show splash if either UPDATE_PATH or pakz files exist
 SHOW_SPLASH="no"
@@ -37,11 +35,7 @@ fi
 
 if [ "$SHOW_SPLASH" = "yes" ] ; then
 	cd $(dirname "$0")/$PLATFORM
-	if [ "$DEVICE" = "brick" ] || [ "$DEVICE" = "brickpro" ]; then
-		./show2.elf --mode=daemon --image="$LOGO_PATH" --text="Installing..." --logoheight=144 --fontsize=32 --progress=-1 &
-	else
-		./show2.elf --mode=daemon --image="$LOGO_PATH" --text="Installing..." --logoheight=128 --progress=-1 &
-	fi
+	./show2.elf --mode=daemon --image="$LOGO_PATH" --text="Installing..." --logoheight=144 --fontsize=32 --progress=-1 &
 	# show2 creates /tmp/show2.fifo only once it is up; a TEXT: written
 	# before that lands in a plain file show2 then replaces, so the message
 	# never shows. Wait for the fifo (bounded, so a splash that fails to

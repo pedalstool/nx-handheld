@@ -4588,9 +4588,6 @@ void PWR_powerOff(int reboot) {
 		GFX_blitMessage(font.large, msg, gfx.screen, &(SDL_Rect){0, 0, gfx.screen->w, gfx.screen->h}); //, NULL);
 		GFX_flip(gfx.screen);
 
-		/* The music owner is independent of the foreground app; only an actual
-		 * poweroff ends it, and a missing/crashed owner is harmless. */
-		system("musicplayerctl.elf shutdown >/dev/null 2>&1");
 		system("killall -TERM keymon.elf");
 		system("killall -TERM audiomon.elf");
 
@@ -4601,7 +4598,6 @@ void PWR_powerOff(int reboot) {
 }
 
 static void PWR_enterSleep(void) {
-	system("musicplayerctl.elf sleep >/dev/null 2>&1");
 	SND_pauseAudio(true);
 	LEDS_pushProfileOverride(LIGHT_PROFILE_SLEEP);
 	if (GetHDMI()) {
@@ -4646,10 +4642,6 @@ static void PWR_exitSleep(void) {
 	if (!GetHDMI()) {
 		SetVolume(GetVolume());
 	}
-	/* audiomon is running again and has republished routing before the owner
-	 * is asked to reopen its stream. */
-	system("musicplayerctl.elf wake >/dev/null 2>&1");
-
 	sync();
 }
 

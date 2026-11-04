@@ -114,13 +114,7 @@ static void led_init_labels(void) {
 
 static void led_save_settings(void) {
 	char diskfilename[256];
-	if (led_is_brickpro) {
-		snprintf(diskfilename, sizeof(diskfilename), "%s/ledsettings_brickpro.txt", SHARED_USERDATA_PATH);
-	} else if (led_is_brick) {
-		snprintf(diskfilename, sizeof(diskfilename), "%s/ledsettings_brick.txt", SHARED_USERDATA_PATH);
-	} else {
-		snprintf(diskfilename, sizeof(diskfilename), "%s/ledsettings.txt", SHARED_USERDATA_PATH);
-	}
+	snprintf(diskfilename, sizeof(diskfilename), "%s/ledsettings_brick.txt", SHARED_USERDATA_PATH);
 
 	FILE* file = fopen(diskfilename, "w");
 	if (file == NULL) {
@@ -355,17 +349,14 @@ static const char* brickpro_zone_titles[] = {"F1 key", "F2 key", "Top bar", "Joy
 static const char* default_zone_titles[] = {"Joystick L", "Joystick R", "Logo"};
 
 SettingsPage* led_page_create(void) {
-	char* device = getenv("DEVICE");
-	led_is_brick = exactMatch("brick", device);
-	led_is_brickpro = exactMatch("brickpro", device);
-	led_per_zone_brightness = led_is_brick || led_is_brickpro;
+	led_is_brick = 1;
+	led_is_brickpro = 0;
+	led_per_zone_brightness = 1;
 	led_num_lights = PLAT_getLedCount();
 
 	led_init_labels();
 
-	const char** zone_titles = led_is_brickpro ? brickpro_zone_titles
-							   : led_is_brick  ? brick_zone_titles
-											   : default_zone_titles;
+	const char** zone_titles = brick_zone_titles;
 
 	/* Build per-zone pages */
 	for (int z = 0; z < led_num_lights; z++) {

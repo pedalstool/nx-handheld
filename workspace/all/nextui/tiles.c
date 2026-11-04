@@ -956,10 +956,12 @@ void Tiles_draw(SDL_Surface* dst, SDL_Rect r, const TileSpec* t, float lit) {
 	SDL_Color c;
 	if (game)
 		c = greyColor(255);
-	else
-		c = (SDL_Color){(Uint8)(ac.r * lit + TILE_MENU_GREY * (1.0f - lit) + 0.5f),
-						(Uint8)(ac.g * lit + TILE_MENU_GREY * (1.0f - lit) + 0.5f),
-						(Uint8)(ac.b * lit + TILE_MENU_GREY * (1.0f - lit) + 0.5f), 255};
+	else {
+		SDL_Color tt = t->kind == TILE_LOGO ? UI_titleText() : ac; // a console: Console text color (color 8)
+		c = (SDL_Color){(Uint8)(tt.r * lit + TILE_MENU_GREY * (1.0f - lit) + 0.5f),
+						(Uint8)(tt.g * lit + TILE_MENU_GREY * (1.0f - lit) + 0.5f),
+						(Uint8)(tt.b * lit + TILE_MENU_GREY * (1.0f - lit) + 0.5f), 255};
+	}
 	// "N games": on every Grid console and collection tile
 	Uint8 count_a = logo_look && !t->no_count ? 255 : 0;
 	switch (t->kind) {
@@ -1112,9 +1114,6 @@ const char* Tiles_toolIcon(const char* pak_name) {
 		{"Device Sync", "menu_icon_sync.png"},
 		{"Emulator Settings", "menu_icon_emulator.png"},
 		{"Files", "menu_icon_files.png"},
-		{"Image Viewer", "menu_icon_images.png"},
-		{"Media Player", "menu_icon_media.png"},
-		{"Music Player", "menu_icon_music.png"},
 		{"Xtras", "menu_icon_xtras.png"},
 		{"PortMaster", "menu_icon_portmaster.png"},
 		{"Cheat Database", "menu_icon_cheats.png"},

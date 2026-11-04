@@ -61,7 +61,6 @@ jobs:
       matrix:
         toolchain:
           - tg5040
-          - tg5050
     steps:
       - name: Checkout
         uses: actions/checkout@v5.0.0
@@ -82,7 +81,6 @@ jobs:
       matrix:
         toolchain:
           - tg5040
-          - tg5050
         core: ${{ fromJson(needs.core-matrix.outputs.cores) }}
     steps:
       - name: Checkout
@@ -145,19 +143,14 @@ jobs:
           path: workspace/${{ env.PLATFORM }}/cores/output/
 
   build-prebuilt:
-    # Third-party binaries built from pinned source (workspace/all/prebuilts/);
-    # shared ones (ffplay, rsync) only with the tg5040 toolchain;
-    # tun.ko is tg5050-only (its kernel lacks CONFIG_TUN).
+    # Third-party binaries built from pinned source (workspace/all/prebuilts/).
     runs-on: ubuntu-24.04-arm
     strategy:
       fail-fast: true
       matrix:
         include:
-          - { toolchain: tg5040, prebuilt: ffplay, inputs: "workspace/all/mediaplayer/include/ffplay/**" }
           - { toolchain: tg5040, prebuilt: rsync, inputs: "workspace/all/prebuilts/rsync.sh" }
           - { toolchain: tg5040, prebuilt: sdl2-drastic, inputs: "workspace/all/other/sdl2-drastic/**" }
-          - { toolchain: tg5050, prebuilt: sdl2-drastic, inputs: "workspace/all/other/sdl2-drastic/**" }
-          - { toolchain: tg5050, prebuilt: tun-ko, inputs: "workspace/tg5050/other/kernel/**" }
     steps:
       - name: Checkout
         uses: actions/checkout@v5.0.0
@@ -229,16 +222,6 @@ jobs:
 
       - name: Build (tg5040)
         run: make common PLATFORM=tg5040
-
-      - name: Download Cores (tg5050)
-        uses: actions/download-artifact@v7.0.0
-        with:
-          path: workspace/tg5050/cores/output/
-          pattern: core-tg5050-*
-          merge-multiple: true
-
-      - name: Build (tg5050)
-        run: make common PLATFORM=tg5050
 
       - name: Special
         run: make special

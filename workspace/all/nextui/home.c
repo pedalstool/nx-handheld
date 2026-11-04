@@ -2111,7 +2111,7 @@ static void minBuild(SDL_Surface* dst) {
 	TTF_Font* f = min_m.font;
 	int gutter = NX_DP(NX_MENU_GUTTER_DP), max_w = dst->w - 2 * gutter;
 	int space = textW(f, "a a") - textW(f, "aa");
-	SDL_Color acc = opaque(UI_accent());
+	SDL_Color acc = opaque(UI_titleText());
 	int n = HomeList_count(ngames, ntools);
 	if (n > MIN_ROWS)
 		n = MIN_ROWS;

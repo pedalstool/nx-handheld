@@ -525,6 +525,17 @@ static void reset_color4(void) {
 	CFG_setColor(4, CFG_DEFAULT_COLOR4);
 }
 
+/* Color 8 - Console title text */
+static int get_console_text_color(void) {
+	return (int)RGBA_toRGB(CFG_getColor(8));
+}
+static void set_console_text_color(int val) {
+	CFG_setColor(8, RGBA_withAlpha(RGBA_fromRGB((uint32_t)val), RGBA_a(CFG_getColor(8))));
+}
+static void reset_console_text_color(void) {
+	CFG_setColor(8, CFG_DEFAULT_COLOR8);
+}
+
 /* Color 5 - List Text Selected (presets are 0xRRGGBB; opacity is kept separately) */
 static int get_color5(void) {
 	return (int)RGBA_toRGB(CFG_getColor(5));
@@ -1461,6 +1472,21 @@ static bool run_confirm_dialog(const char* title, const char* subtitle) {
 	return UI_confirmModal(g_screen, title, subtitle, &app_quit, false, true);
 }
 
+// Power off / reboot: the launch loop contract (MinUI.pak/launch.sh, as the OSD's toggle_power): flag
+// /tmp/poweroff or /tmp/reboot and quit; the loop runs poweroff_next / reboot_next once Settings exits.
+static void request_power(bool reboot) {
+	if (!run_confirm_dialog(reboot ? "Reboot now?" : "Power off now?", "A to confirm, B to cancel"))
+		return;
+	FILE* f = fopen(reboot ? "/tmp/reboot" : "/tmp/poweroff", "w");
+	if (f)
+		fclose(f);
+	unlink("/tmp/nextui_exec");
+	sync();
+	app_quit = true;
+}
+static void power_off_now(void) { request_power(false); }
+static void reboot_now(void) { request_power(true); }
+
 // Every page's "Reset to defaults" asks first: one press would otherwise wipe the whole menu's choices.
 static bool confirm_reset_page(void) {
 	return run_confirm_dialog("Reset to defaults?", "Every option in this menu goes back to its default value.");
@@ -2113,6 +2139,9 @@ static void build_menu_tree(const DeviceInfo* dev) {
 		"List text", "List text color",
 		color_labels, COLOR_COUNT, (int*)color_values, get_color4, set_color4, reset_color4);
 	appearance_items[idx++] = (SettingItem)ITEM_COLOR_INIT(
+		"Console text color", "Color of console names and logos",
+		color_labels, COLOR_COUNT, (int*)color_values, get_console_text_color, set_console_text_color, reset_console_text_color);
+	appearance_items[idx++] = (SettingItem)ITEM_COLOR_INIT(
 		"List text selected", "List selected text color",
 		color_labels, COLOR_COUNT, (int*)color_values, get_color5, set_color5, reset_color5);
 	appearance_items[idx++] = (SettingItem)ITEM_CYCLE_INIT(
@@ -2258,6 +2287,10 @@ static void build_menu_tree(const DeviceInfo* dev) {
 	system_items[idx++] = (SettingItem)ITEM_BUTTON_INIT(
 		"Reset to defaults", "Resets all options in this menu to their default values.",
 		reset_system_page);
+	system_items[idx++] = (SettingItem)ITEM_BUTTON_INIT(
+		"Reboot", "Restart the device now.", reboot_now);
+	system_items[idx++] = (SettingItem)ITEM_BUTTON_INIT(
+		"Power off", "Shut the device down now.", power_off_now);
 	init_page(&system_page, "Settings | System", system_items, idx, 0);
 
 	// ============================

@@ -189,7 +189,7 @@ bool MinOpen_start(MinOpen* o, const MinMetrics* m, char lines[][MIN_LINE_MAX], 
 	if (!CFG_getMenuAnimations())
 		return false;
 	GFX_freeSurfaceAndTexture(o->name);
-	o->name = MinDraw_lines(m, lines, n > 0 ? n : 1, from.w, opaque(UI_accent()), false);
+	o->name = MinDraw_lines(m, lines, n > 0 ? n : 1, from.w, opaque(UI_titleText()), false);
 	o->from = from;
 	o->start = SDL_GetTicks();
 	o->active = true;

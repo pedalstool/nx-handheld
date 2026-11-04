@@ -28,14 +28,12 @@
 
 #include <dirent.h>
 
-int is_brick = 0;
-int is_brickpro = 0;
+int is_brick = 1;
 float ui_scale = 0;
 void PLAT_initPlatform(void) {
-	// TODO: replace with something that doesnt bleed out of tg5040 scope
-	char* device = getenv("DEVICE");
-	is_brick = exactMatch("brick", device);
-	is_brickpro = exactMatch("brickpro", device);
+	// Brick / Brick Hammer only in this fork
+	is_brick = 1;
+	(void)getenv("DEVICE");
 }
 
 static SDL_Joystick** joysticks = NULL;
@@ -228,7 +226,7 @@ int PLAT_isUSBConnected(void) {
 
 void PLAT_enableBacklight(int enable) {
 	if (enable) {
-		if (is_brick || is_brickpro)
+		if (is_brick)
 			SetRawBrightness(8);
 		SetBrightness(GetBrightness());
 	} else {
@@ -471,7 +469,7 @@ void PLAT_pinThreadsByCommToCoreSet(const char* comm_prefix, int set) {
 
 #define MAX_STRENGTH 0xFFFF
 #define MIN_VOLTAGE RUMBLE_MIN_VOLTAGE
-#define MAX_VOLTAGE (is_brickpro ? RUMBLE_MAX_VOLTAGE_BRICKPRO : RUMBLE_MAX_VOLTAGE)
+#define MAX_VOLTAGE RUMBLE_MAX_VOLTAGE
 
 void PLAT_setRumble(int strength) {
 	int voltage = MAX_VOLTAGE;
@@ -534,30 +532,10 @@ static const LedZone led_zones_brick[] = {
 	{"Topbar", "m"},
 	{"L/R triggers", "lr"},
 };
-static const LedZone led_zones_brickpro[] = {
-	{"FN 1 key", "f1"},
-	{"FN 2 key", "f2"},
-	{"Topbar", "m"},
-	{"Joysticks", "lr"},
-	{"L/R triggers", "rear"},
-};
-static const LedZone led_zones_smartpro[] = {
-	{"Joystick L", "l"},
-	{"Joystick R", "r"},
-	{"Logo", "m"},
-};
 
 static const LedZone* PLAT_getLedZones(int* count) {
-	if (is_brickpro) {
-		*count = sizeof(led_zones_brickpro) / sizeof(led_zones_brickpro[0]);
-		return led_zones_brickpro;
-	}
-	if (is_brick) {
-		*count = sizeof(led_zones_brick) / sizeof(led_zones_brick[0]);
-		return led_zones_brick;
-	}
-	*count = sizeof(led_zones_smartpro) / sizeof(led_zones_smartpro[0]);
-	return led_zones_smartpro;
+	*count = sizeof(led_zones_brick) / sizeof(led_zones_brick[0]);
+	return led_zones_brick;
 }
 
 int PLAT_getLedCount(void) {
@@ -594,14 +572,7 @@ void PLAT_initDefaultLeds() {
 }
 void PLAT_initLeds(LightSettings* lights) {
 	PLAT_initDefaultLeds();
-	FILE* file;
-	if (is_brickpro) {
-		file = PLAT_OpenSettings("ledsettings_brickpro.txt");
-	} else if (is_brick) {
-		file = PLAT_OpenSettings("ledsettings_brick.txt");
-	} else {
-		file = PLAT_OpenSettings("ledsettings.txt");
-	}
+	FILE* file = PLAT_OpenSettings("ledsettings_brick.txt");
 
 	if (file == NULL) {
 		LOG_warn("Unable to open led settings file\n");
@@ -677,16 +648,12 @@ void PLAT_initLeds(LightSettings* lights) {
 #define LED_PATH_GLOBAL "/sys/class/led_anim/max_scale"
 
 static void PLAT_getLedBrightnessPath(LightSettings* led, char* filepath, size_t size) {
-	if (is_brick || is_brickpro) {
-		if (strcmp(led->filename, "m") == 0) {
-			snprintf(filepath, size, LED_PATH_GLOBAL);
-		} else if (strcmp(led->filename, "f1") == 0) {
-			snprintf(filepath, size, "/sys/class/led_anim/max_scale_f1f2");
-		} else {
-			snprintf(filepath, size, "/sys/class/led_anim/max_scale_%s", led->filename);
-		}
-	} else {
+	if (strcmp(led->filename, "m") == 0) {
 		snprintf(filepath, size, LED_PATH_GLOBAL);
+	} else if (strcmp(led->filename, "f1") == 0) {
+		snprintf(filepath, size, "/sys/class/led_anim/max_scale_f1f2");
+	} else {
+		snprintf(filepath, size, "/sys/class/led_anim/max_scale_%s", led->filename);
 	}
 }
 

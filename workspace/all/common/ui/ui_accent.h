@@ -34,6 +34,8 @@ bool UI_accentOverride(uint32_t* rgb);
 
 // The accent and its ink as SDL colours (the theme's alpha without an override, opaque with one).
 SDL_Color UI_accent(void);
+// Appearance > Console title text (color 8): the Minimal layout's large names and the Grid header's console name.
+SDL_Color UI_titleText(void);
 SDL_Color UI_onAccent(void);
 // The accent as a screen-mapped colour for SDL_FillRect and the GFX_*Color blits: THEME_COLOR1 itself without an
 // override (so those blits recover its packed RGBA), the override mapped for fmt otherwise.

@@ -112,7 +112,7 @@ static void slotsClear(void) {
 // A list, tab, screen size, scale or accent change: drop what was composed and measured for the last one, and snap to
 // the selection.
 static bool syncList(SDL_Surface* dst, int n, int lastScreen) {
-	SDL_Color a = UI_accent();
+	SDL_Color a = UI_titleText();
 	Uint32 accent = (Uint32)a.r << 16 | (Uint32)a.g << 8 | a.b;
 	bool changed = top->serial != seen_top || MenuTabs_generation() != seen_gen || n != seen_n || dst->w != seen_w ||
 				   scaleKey() != seen_scale || accent != seen_accent || lastScreen != SCREEN_GAMELIST;
@@ -177,7 +177,7 @@ static Slot* slotFor(int i, int sel, int max_w) {
 	GFX_freeSurfaceAndTexture(s->outline);
 	char lines[MIN_MAX_LINES][MIN_LINE_MAX];
 	int c = wrapName(i, max_w, lines);
-	SDL_Color acc = UI_accent();
+	SDL_Color acc = UI_titleText();
 	acc.a = 255;
 	s->index = i;
 	s->solid = MinDraw_lines(&m, lines, c, max_w, acc, false);
@@ -312,7 +312,7 @@ static SDL_Surface* rowSurface(SDL_Rect* r) {
 	bodyRange(screen, &body_top, &body_bottom);
 	char lines[MIN_MAX_LINES][MIN_LINE_MAX];
 	int c = wrapName(sel, max_w, lines);
-	SDL_Color acc = UI_accent();
+	SDL_Color acc = UI_titleText();
 	acc.a = 255;
 	*r = (SDL_Rect){NX_DP(NX_MENU_GUTTER_DP), nameY(sel, currentPos(), body_top, max_w), max_w, c * m.pitch};
 	return MinDraw_lines(&m, lines, c, max_w, acc, false);
