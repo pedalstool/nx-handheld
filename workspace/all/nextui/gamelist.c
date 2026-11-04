@@ -368,6 +368,10 @@ static void resolveAndLoadBackground(Entry* entry, const char* rompath, const ch
 	}
 }
 
+static bool tabBgExists(const char* path) {
+	return exists((char*)path);
+}
+
 // Warm the folder-bg cache for the rows next to the selection (Consoles / Collections).
 static void prefetchNeighborFolderBgs(MenuTabId tab, int selected) {
 	if (!top || !top->entries || (tab != MENU_TAB_CONSOLES && tab != MENU_TAB_COLLECTIONS))
@@ -383,10 +387,6 @@ static void prefetchNeighborFolderBgs(MenuTabId tab, int selected) {
 		if (e && TabBg_path(kind, e->path, art, tabBgExists, bg, sizeof(bg)))
 			folderBgPrefetch(bg);
 	}
-}
-
-static bool tabBgExists(const char* path) {
-	return exists((char*)path);
 }
 
 // The user's background for the selected row of the Consoles or Collections List tab (tabbg_model.h), or NULL.
