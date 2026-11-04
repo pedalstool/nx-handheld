@@ -14,14 +14,18 @@ Brick / Brick Hammer fork of [NX Redux](https://github.com/nx-redux/nx-handheld)
 
 ## Releases
 
-Download **`NXRedux-<tag>-brick.zip`** from [Releases](https://github.com/pedalstool/nx-handheld/releases). That zip is both the full install and the OTA package (there is no separate delta patch).
+Each release publishes two zips:
+
+| Asset | Use |
+|---|---|
+| `NXRedux-<tag>-brick.zip` | **OTA** — Settings → About → Check for updates (changed system files only; usually a few MB) |
+| `NXRedux-<tag>-brick-full.zip` | **Full install** — extract to a blank / clean SD card |
 
 ## Install
 
 1. Update stock TrimUI firmware to **1.1.1** for the Brick first.
-2. Unzip the release onto the SD card root (so you get `MinUI.zip` / `.system` as shipped).
-3. Boot the device and let it install.
-4. Later updates: **Settings → About → Check for updates** (after this build is installed once — stock NX Redux still points at upstream).
+2. First time: download **`brick-full`**, unzip onto the SD card root, boot and let it install.
+3. Later updates: **Settings → About → Check for updates** (downloads the slim `brick.zip` OTA).
 
 ## Credits
 
