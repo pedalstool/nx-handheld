@@ -3876,6 +3876,9 @@ FALLBACK_IMPLEMENTATION int PLAT_shouldWake(void) {
 	}
 	return 0;
 }
+FALLBACK_IMPLEMENTATION int PLAT_isExternalPower(void) {
+	return 0;
+}
 FALLBACK_IMPLEMENTATION int PLAT_supportsDeepSleep(void) {
 	return 0;
 }
@@ -4639,7 +4642,11 @@ static void PWR_waitForWake(void) {
 		}
 		SDL_Delay(200);
 		if (sleepDelay > 0 && SDL_GetTicks() - sleep_ticks >= sleepDelay) {
-			if (SDL_AtomicGet(&pwr.is_charging) ||
+			// Stay on this loop while a cable is attached. is_charging is
+			// false once time_to_full hits 0, and echo mem with VBUS present
+			// can sit there forever: the power button never resumes it.
+			// The button still wakes this loop (PAD_wake).
+			if (PLAT_isExternalPower() || SDL_AtomicGet(&pwr.is_charging) ||
 				(CFG_getKeepAwakeUSB() && SDL_AtomicGet(&pwr.is_usb_connected))) {
 				sleep_ticks += 60000; // check again in a minute
 				continue;
@@ -4648,9 +4655,13 @@ static void PWR_waitForWake(void) {
 				int ret = PWR_deepSleep();
 				if (ret == 0) {
 					return;
-				} else {
-					LOG_warn("failed to enter deep sleep - powering off\n");
 				}
+				LOG_warn("failed to enter deep sleep\n");
+				if (PLAT_isExternalPower() || SDL_AtomicGet(&pwr.is_charging)) {
+					sleep_ticks = SDL_GetTicks();
+					continue;
+				}
+				LOG_warn("powering off\n");
 			}
 			if (pwr.can_poweroff)
 				PWR_powerOff(0);

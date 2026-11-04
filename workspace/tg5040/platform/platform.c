@@ -176,11 +176,18 @@ void PLAT_getNetworkStatus(int* is_online) {
 		bluetoothConnected = false;
 }
 
+int PLAT_isExternalPower(void) {
+	// VBUS present. A full pack reports time_to_full 0, so this is not
+	// "actively charging". Deep sleep while this is set can hang in
+	// `echo mem` and ignore the power button.
+	return getInt("/sys/class/power_supply/axp2202-usb/online") == 1;
+}
+
 void PLAT_getBatteryStatusFine(int* is_charging, int* charge) {
 	if (is_charging) {
 		int time_to_full = getInt("/sys/class/power_supply/axp2202-battery/time_to_full_now");
-		int charger_present = getInt("/sys/class/power_supply/axp2202-usb/online");
-		*is_charging = (charger_present == 1) && (time_to_full > 0);
+		int charger_present = PLAT_isExternalPower();
+		*is_charging = charger_present && (time_to_full > 0);
 	}
 	if (charge) {
 		*charge = getInt("/sys/class/power_supply/axp2202-battery/capacity");
@@ -199,7 +206,7 @@ int PLAT_isUSBConnected(void) {
 	//   wall charger before any host session doesn't count as connected.
 	// Accepted edge: a charger plugged in AFTER a host session in the same
 	// boot still reads as connected (latched state + VBUS). Harmless — the
-	// device is on external power, and charging already defers deep sleep.
+	// device is on external power, and that already defers deep sleep.
 	if (getInt("/sys/class/power_supply/axp2202-usb/online") != 1)
 		return 0;
 	DIR* dir = opendir("/sys/class/udc");

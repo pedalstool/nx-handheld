@@ -19,6 +19,10 @@ Download **`NXRedux-<tag>-brick.zip`** from [Releases](https://github.com/pedals
 
 ### Changelog
 
+**v1.1.2**
+
+- Sleeping while plugged in no longer hangs. The power button wakes the Brick again. A full battery on the charger used to enter deep sleep, and that sleep does not resume.
+
 **v1.1.1**
 
 - Console backgrounds show again when you return to a console. A failed background load no longer blocks later ones.

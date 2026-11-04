@@ -63,6 +63,14 @@ after() {
 	# alsactl --file "$asound_state_dir/asound.state.pre" restore || true
 }
 
+# VBUS present: do not echo mem. On the Brick that write can never return,
+# so the power button does not wake the device. Callers keep the screen-off
+# loop and wake on the button instead.
+if [ "$(cat /sys/class/power_supply/axp2202-usb/online 2>/dev/null)" = "1" ]; then
+	>&2 echo "USB power present, skipping suspend"
+	exit 1
+fi
+
 before
 
 >&2 echo "Suspending..."
