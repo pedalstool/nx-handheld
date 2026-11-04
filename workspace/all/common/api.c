@@ -751,7 +751,6 @@ static void GFX_initAssetRectsInto(SDL_Rect* rects, float scale) {
 	rects[ASSET_BATTERY_FILL] = (SDL_Rect){AR4(81, 33, 12, 6)};
 	rects[ASSET_BATTERY_FILL_LOW] = (SDL_Rect){AR4(1, 55, 12, 6)};
 	rects[ASSET_BATTERY_BOLT] = (SDL_Rect){AR4(81, 41, 12, 6)};
-	rects[ASSET_BATTERY_CHARGING] = (SDL_Rect){AR4(44, 66, 24, 10)};
 	rects[ASSET_SCROLL_UP] = (SDL_Rect){AR4(97, 23, 24, 6)};
 	rects[ASSET_SCROLL_DOWN] = (SDL_Rect){AR4(97, 31, 24, 6)};
 	rects[ASSET_WIFI] = (SDL_Rect){AR4(1, 104, 12, 12)};

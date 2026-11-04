@@ -263,6 +263,23 @@ jobs:
           pattern: release-artifacts*
           merge-multiple: true
 
+      - name: Write release notes
+        # Before the new tag exists, so the log is the commits since the previous tag.
+        # The first paragraph is what Settings > About shows on the device.
+        run: |
+          set -euo pipefail
+          PREV_COMMIT="$(git rev-list --tags --max-count=1)"
+          PREV_TAG="$(git describe --tags --exact-match "$PREV_COMMIT")"
+          {
+            echo "Changes since ${PREV_TAG}:"
+            git log "${PREV_TAG}..HEAD" --pretty=format:'- %s'
+            echo
+            echo
+            echo "Select zip files that is relevant to your platform and extract it to your exFAT formatted SDCARD. Alternatively, you can update directly using the OTA update feature in the device."
+            echo
+            echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${{ needs.prepare.outputs.next-tag }}"
+          } > release-notes.md
+
       - name: Create and Push Tag
         run: |
           git config --global user.email "action@github.com"
@@ -276,9 +293,6 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           files: releases/*
-          generate_release_notes: true
-          append_body: true
           tag_name: ${{ needs.prepare.outputs.next-tag }}
           make_latest: "true"
-          body: |
-            Select zip files that is relevant to your platform and extract it to your exFAT formatted SDCARD. Alternatively, you can update directly using the OTA update feature in the device.
+          body_path: release-notes.md

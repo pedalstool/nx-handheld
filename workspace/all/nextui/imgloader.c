@@ -174,10 +174,17 @@ static void folderBgCacheClear(void) {
 static SDL_atomic_t folderbgchanged;
 static SDL_atomic_t thumbchanged;
 
-/* Show surface as the folder background (takes the caller's display ref). bgMutex held. */
+/* Show surface as the folder background (takes the caller's display ref). bgMutex held.
+   The same pointer means we already hold a ref: drop the one just passed in. A hide keeps
+   that surface but skips it on the layer, so becoming visible again has to redraw. */
 static void folderBgShow(SDL_Surface* surface) {
 	if (folderbgbmp == surface) {
-		folderBgVisible = true;
+		SDL_FreeSurface(surface);
+		if (!folderBgVisible) {
+			folderBgVisible = true;
+			SDL_AtomicSet(&folderbgchanged, 1);
+			setNeedDraw(1);
+		}
 		return;
 	}
 	if (folderbgbmp)
@@ -529,7 +536,15 @@ void startLoadFolderBackground(const char* imagePath, BackgroundLoadedCallback c
 	folderBgLoading = true;
 	SDL_UnlockMutex(bgMutex);
 
-	enqueueTask(&bgQueue, task);
+	if (!enqueueTask(&bgQueue, task)) {
+		SDL_LockMutex(bgMutex);
+		if (strcmp(desiredFolderBgPath, imagePath) == 0) {
+			folderBgLoading = false;
+			SDL_AtomicSet(&folderbgchanged, 1);
+			setNeedDraw(1);
+		}
+		SDL_UnlockMutex(bgMutex);
+	}
 }
 
 void onBackgroundLoaded(SDL_Surface* surface, const char* imagePath) {

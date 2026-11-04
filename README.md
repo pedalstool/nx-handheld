@@ -7,15 +7,33 @@ Brick / Brick Hammer fork of [NX Redux](https://github.com/nx-redux/nx-handheld)
 - **Brick / Hammer only** — same `tg5040` `DEVICE=brick` build; Brick Pro, Smart Pro, and Smart Pro S are not supported
 - **No media apps** — Music Player, Media Player, Image Viewer, and the OSD music widget are removed
 - **Console text color** — Settings includes console title / text color (from console-text-color v6)
-- **Faster console backgrounds** — screen-sized backgrounds are cached and shared (no copy on revisit); neighboring consoles prefetch while idle so browsing the Consoles list stays responsive
+- **Faster console backgrounds** — screen-sized backgrounds are cached and shared (no copy on revisit); neighboring consoles prefetch while idle so browsing the Consoles list stays responsive. Returning to a console draws that background again
 - **Last Played** — "Recently Played" / Game Switcher "Recent" labels are "Last Played" (from [BRICK-UI](https://github.com/bebeidon/BRICK-UI))
-- **Battery as plain text** — with battery percentage enabled, the status bar shows `80%` (text only, including while charging)
+- **Battery as plain text** — with battery percentage enabled, the status bar shows `80%` (text only)
 - **Power Off in MENU menu** — MENU context menu includes Power Off (alongside Refresh Roms / Tools)
 - **Updates from this fork** — in-device updater checks `pedalstool/nx-handheld` releases
 
 ## Releases
 
 Download **`NXRedux-<tag>-brick.zip`** from [Releases](https://github.com/pedalstool/nx-handheld/releases). That zip is both the full SD install and the OTA package (complete system zip — required by the boot installer).
+
+### Changelog
+
+**v1.1.1**
+
+- Console backgrounds show again when you return to a console. A failed background load no longer blocks later ones.
+- Nearby console backgrounds prefetch while you browse. Power Off is in the MENU menu.
+- The update zip is a full system package. v1.1.0 shipped a partial zip that could leave the Brick unable to boot.
+- The unused charging-battery graphic is gone. With battery percentage on, the status bar is plain text (`80%`).
+
+**v1.1.0**
+
+- Battery percentage shows as plain text.
+- "Last Played" labels, and folder backgrounds are cached.
+
+**v1.0.0**
+
+- First Brick / Hammer build of this fork.
 
 ## Install
 
