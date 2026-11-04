@@ -2255,11 +2255,9 @@ static TTF_Font* listFont(bool root) {
 	return root ? UI_mainListFont() : font.large; // font.large where the sizes match
 }
 
-// The Bricks' Home List (under its stats strip): its rows also take the band's top padding (down to the band's text)
-// and sit 1.5 dp lower, the Brick's slot otherwise missing a sixth row at the main menu's pitch by a few px. The
-// Smart Pro's keeps the main menu's.
+// Brick/Hammer Home List (under its stats strip): rows also take the band's top padding and sit 1.5 dp lower.
 static bool brickHomeList(void) {
-	return Home_isList() && UIScale_deviceIndex(UI_DEVICE_NAME) != UI_DEVICE_SMARTPRO;
+	return Home_isList();
 }
 
 static InfoBandLayout listLayoutFrom(int list_top, bool root, bool home) {
@@ -2335,7 +2333,7 @@ static InfoBandLayout listLayout(void) {
 }
 
 int GameList_rowCountFrom(int list_top) {
-	return listLayoutFrom(list_top, true, UIScale_deviceIndex(UI_DEVICE_NAME) != UI_DEVICE_SMARTPRO).rows;
+	return listLayoutFrom(list_top, true, true).rows;
 }
 
 // The launcher's List rows (the main menu's, the game lists' and the Game Switcher's): the shared list's text start

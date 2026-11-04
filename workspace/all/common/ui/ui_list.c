@@ -246,10 +246,9 @@ void UI_listLayoutSetRowHeight(ListLayout* layout, int row_h, int rows_wanted) {
 	layout->down_y = b.down_y;
 }
 
-// The pill's end off the screen's sides: none on the Bricks (the pill's edge on the screen's), 6 dp on the Smart Pros,
-// whose panel edge clips a pill's end flush with it.
+// The pill's end off the screen's sides: none on Brick/Hammer (pill edge on the screen edge).
 int UI_listEdgeInset(void) {
-	return UIScale_deviceIndex(UI_DEVICE_NAME) == UI_DEVICE_SMARTPRO ? NX_DP(6) : 0;
+	return 0;
 }
 
 int UI_listTextX(void) {
