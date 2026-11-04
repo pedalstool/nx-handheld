@@ -234,43 +234,17 @@ jobs:
         # rate-limited (see settings_updater.c / updater_url.c).
         run: make package BUILD_TAG=${{ needs.prepare.outputs.next-tag }} RELEASE_NAME=NXRedux-${{ needs.prepare.outputs.next-tag }}
 
-      # Full zip stays as *-brick-full.zip. The on-device updater looks for
-      # *-brick.zip — that name is reserved for a slim OTA (changed MinUI
-      # members only) when a previous release exists to diff against.
-      - name: Build OTA zip
+      # NOTE: do NOT ship a "changed files only" MinUI.zip as -brick.zip.
+      # boot.sh rm -rf's .system/bin, lib, and paks before unzip; a partial
+      # MinUI.zip leaves the card unbootable (poweroff loop). OTA must be a
+      # complete package. Keep an identical -brick-full.zip for SD installs.
+      - name: Alias full package for OTA + SD install
         env:
           NEXT_TAG: ${{ needs.prepare.outputs.next-tag }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -eu
           FULL="releases/NXRedux-${NEXT_TAG}-brick.zip"
-          FULL_OUT="releases/NXRedux-${NEXT_TAG}-brick-full.zip"
-          OTA_OUT="releases/NXRedux-${NEXT_TAG}-brick.zip"
-          mv "$FULL" "$FULL_OUT"
-
-          PREV_TAG="$(git describe --tags --abbrev=0 2>/dev/null || true)"
-          if [ -z "$PREV_TAG" ] || [ "$PREV_TAG" = "$NEXT_TAG" ]; then
-            echo "No previous tag; shipping full package as -brick.zip too"
-            cp "$FULL_OUT" "$OTA_OUT"
-            exit 0
-          fi
-
-          PREV_DIR="$(mktemp -d)"
-          # Prefer the previous full install zip; fall back to -brick.zip (v1.0.0).
-          if gh release download "$PREV_TAG" -R "$GITHUB_REPOSITORY" -p "NXRedux-${PREV_TAG}-brick-full.zip" -D "$PREV_DIR"; then
-            PREV_ZIP="$PREV_DIR/NXRedux-${PREV_TAG}-brick-full.zip"
-          elif gh release download "$PREV_TAG" -R "$GITHUB_REPOSITORY" -p "NXRedux-${PREV_TAG}-brick.zip" -D "$PREV_DIR"; then
-            PREV_ZIP="$PREV_DIR/NXRedux-${PREV_TAG}-brick.zip"
-          else
-            echo "Could not download previous release; shipping full as -brick.zip"
-            cp "$FULL_OUT" "$OTA_OUT"
-            exit 0
-          fi
-
-          if ! python3 scripts/make-ota-zip.py "$PREV_ZIP" "$FULL_OUT" "$OTA_OUT"; then
-            echo "OTA diff failed; shipping full as -brick.zip"
-            cp "$FULL_OUT" "$OTA_OUT"
-          fi
+          cp -f "$FULL" "releases/NXRedux-${NEXT_TAG}-brick-full.zip"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v6.0.0
@@ -320,6 +294,3 @@ jobs:
           make_latest: "true"
           body: |
             Select zip files that is relevant to your platform and extract it to your exFAT formatted SDCARD. Alternatively, you can update directly using the OTA update feature in the device.
-
-            - `NXRedux-<tag>-brick.zip` — slim OTA for Settings → About → Check for updates (changed system files only)
-            - `NXRedux-<tag>-brick-full.zip` — full SD install package
