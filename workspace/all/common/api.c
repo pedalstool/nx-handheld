@@ -2337,64 +2337,49 @@ void GFX_blitMessage(TTF_Font* font, char* msg, SDL_Surface* dst, SDL_Rect* dst_
 static float hw_scale = 0;
 #define HW1(a) (hw_scale > 0 ? (int)((a) * hw_scale + 0.5f) : SCALE1(a))
 
-// While charging with the percentage shown, the battery is the wider ASSET_BATTERY_CHARGING: the bolt alone would
-// leave no room for the number.
-static int batteryShowsChargingPercent(int is_charging) {
-	return is_charging && CFG_getShowBatteryPercent();
+// Plain "80%" text when Settings > Show battery percent is on (no battery glyph).
+static SDL_Surface* batteryPercentSurf(void) {
+	char percentage[16];
+	snprintf(percentage, sizeof(percentage), "%i%%", SDL_AtomicGet(&pwr.charge));
+	return GFX_getCachedText(font.tiny, percentage, uintToColour(THEME_COLOR6_255));
 }
 
-// The battery glyph's rect as GFX_blitBatteryAtPosition draws it now, for laying out the status group around it.
+// The battery glyph's (or percent text's) rect as GFX_blitBatteryAtPosition draws it now.
 static SDL_Rect batteryRect(void) {
-	return asset_rects[batteryShowsChargingPercent(SDL_AtomicGet(&pwr.is_charging)) ? ASSET_BATTERY_CHARGING
-																					: ASSET_BATTERY];
+	if (CFG_getShowBatteryPercent()) {
+		SDL_Surface* text = batteryPercentSurf();
+		if (text)
+			return (SDL_Rect){0, 0, text->w, text->h};
+	}
+	return asset_rects[ASSET_BATTERY];
 }
 
 void GFX_blitBatteryAtPosition(SDL_Surface* dst, int x, int y) {
-	SDL_Rect battery_rect = asset_rects[ASSET_BATTERY];
+	if (CFG_getShowBatteryPercent()) {
+		SDL_Surface* text = batteryPercentSurf();
+		if (text)
+			SDL_BlitSurface(text, NULL, dst, &(SDL_Rect){x, y});
+		return;
+	}
+
 	int is_charging = SDL_AtomicGet(&pwr.is_charging);
-
-	if (batteryShowsChargingPercent(is_charging)) {
-		SDL_Rect charging_rect = asset_rects[ASSET_BATTERY_CHARGING];
-		GFX_blitAssetColor(ASSET_BATTERY_CHARGING, NULL, dst, &(SDL_Rect){x, y}, THEME_COLOR6);
-
-		char percentage[16];
-		sprintf(percentage, "%i", SDL_AtomicGet(&pwr.charge));
-		SDL_Surface* text = GFX_renderText(font.micro, percentage, uintToColour(THEME_COLOR6_255));
-		// centred in the space right of the bolt (the glyph's units 7 to 23)
-		int left = HW1(7);
-		SDL_Rect target = {
-			x + left + (charging_rect.w - left - HW1(1) - text->w) / 2,
-			y + (charging_rect.h - text->h) / 2 - 1};
-		SDL_BlitSurface(text, NULL, dst, &target);
-		SDL_FreeSurface(text);
-	} else if (is_charging) {
+	if (is_charging) {
 		GFX_blitAssetColor(ASSET_BATTERY, NULL, dst, &(SDL_Rect){x, y}, THEME_COLOR6);
 		GFX_blitAssetColor(ASSET_BATTERY_BOLT, NULL, dst, &(SDL_Rect){x + HW1(3), y + HW1(2)}, THEME_COLOR6);
-	} else {
-		int percent = SDL_AtomicGet(&pwr.charge);
-		GFX_blitAssetColor(percent <= 10 ? ASSET_BATTERY_LOW : ASSET_BATTERY, NULL, dst, &(SDL_Rect){x, y}, THEME_COLOR6);
+		return;
+	}
 
-		if (CFG_getShowBatteryPercent()) {
-			char percentage[16];
-			sprintf(percentage, "%i", SDL_AtomicGet(&pwr.charge));
-			SDL_Surface* text = GFX_renderText(font.micro, percentage, uintToColour(THEME_COLOR6_255));
-			SDL_Rect target = {
-				x + (battery_rect.w - text->w) / 2 + 1,
-				y + (battery_rect.h - text->h) / 2 - 1};
-			SDL_BlitSurface(text, NULL, dst, &target);
-			SDL_FreeSurface(text);
-		} else {
-			SDL_Rect fill_rect = asset_rects[ASSET_BATTERY_FILL];
-			SDL_Rect clip = fill_rect;
-			clip.w *= percent;
-			clip.w /= 100;
-			if (clip.w > 0) {
-				clip.x = fill_rect.w - clip.w;
-				clip.y = 0;
-				GFX_blitAssetColor(percent <= 20 ? ASSET_BATTERY_FILL_LOW : ASSET_BATTERY_FILL, &clip, dst,
-								   &(SDL_Rect){x + HW1(3) + clip.x, y + HW1(2)}, THEME_COLOR6);
-			}
-		}
+	int percent = SDL_AtomicGet(&pwr.charge);
+	GFX_blitAssetColor(percent <= 10 ? ASSET_BATTERY_LOW : ASSET_BATTERY, NULL, dst, &(SDL_Rect){x, y}, THEME_COLOR6);
+	SDL_Rect fill_rect = asset_rects[ASSET_BATTERY_FILL];
+	SDL_Rect clip = fill_rect;
+	clip.w *= percent;
+	clip.w /= 100;
+	if (clip.w > 0) {
+		clip.x = fill_rect.w - clip.w;
+		clip.y = 0;
+		GFX_blitAssetColor(percent <= 20 ? ASSET_BATTERY_FILL_LOW : ASSET_BATTERY_FILL, &clip, dst,
+						   &(SDL_Rect){x + HW1(3) + clip.x, y + HW1(2)}, THEME_COLOR6);
 	}
 }
 

@@ -9,7 +9,7 @@ Brick / Brick Hammer fork of [NX Redux](https://github.com/nx-redux/nx-handheld)
 - **Console text color** — Settings includes console title / text color (from console-text-color v6)
 - **Faster folder/console backgrounds** — backgrounds stay on screen while the next one loads, and recent folders are cached so revisiting a console does not wait on a full decode again (from [BRICK-UI](https://github.com/bebeidon/BRICK-UI))
 - **Last Played** — "Recently Played" / Game Switcher "Recent" labels are "Last Played" (from [BRICK-UI](https://github.com/bebeidon/BRICK-UI))
-- **Battery % while charging** — with battery percentage enabled, the charge level stays visible while plugged in
+- **Battery as plain text** — with battery percentage enabled, the status bar shows `80%` (text only, including while charging)
 - **Updates from this fork** — in-device updater checks `pedalstool/nx-handheld` releases
 
 ## Releases
