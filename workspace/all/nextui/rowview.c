@@ -437,14 +437,12 @@ static const char* toolIconFile(Entry* e, const char* name) {
 	return icon ? icon : TILE_UNKNOWN_TOOL_ICON;
 }
 
-// "N games" for a Consoles or Collections row ("" while unknown).
+// "N games" for a Collections row ("" while unknown). Consoles draw none.
 static void countLabel(Entry* e, TileKind kind, char* out, size_t size) {
 	out[0] = '\0';
 	if (GameList_lookTab() < 0)
 		return;
-	if (kind == TILE_LOGO)
-		GameInfo_gamesLabel(Content_consoleGameCount(e), out, size);
-	else if (kind == TILE_COLLECTION)
+	if (kind == TILE_COLLECTION)
 		GameInfo_gamesLabel(CollCount_get(e->path), out, size);
 }
 
@@ -2171,35 +2169,6 @@ static void itemCountsClear(void) {
 	item_count_clock = 0;
 }
 
-// A Vertical stack's Consoles "N games" on item e, centred at (cx, cy) at its live scale, d steps from the position
-// (Stack_countOn): 8 dp under its logo as drawn (or a logo-less console's name, at least a half-slot "logo"), scaled
-// with the item and fading 1 − d, so it rides with its own logo instead of sitting in the selection's slot.
-static void drawItemCount(SDL_Surface* screen, const RowGeo* g, Entry* e, TileKind kind, int cx, int cy, float scale,
-						  float d) {
-	if (g->kind != ROW_BACKDROP_LOGO)
-		return;
-	char text[32];
-	countLabel(e, kind, text, sizeof(text));
-	if (!text[0])
-		return;
-	bool pending;
-	int lh = logoHeight(g, e, kind, &pending);
-	if (pending)
-		return;
-	int drawn = lh >= 0 ? lh : logoNameHeight(View_displayName(e), g->full_w, g->full_h, g->k);
-	if (lh < 0 && g->vertical && drawn < g->full_h / 2)
-		drawn = g->full_h / 2;
-	StackCount c = Stack_countOn((float)cy, scale, (float)drawn, (float)NX_DPF(ROW_LOGO_COUNT_GAP_DP), d);
-	Uint8 a = (Uint8)(255.0f * c.alpha + 0.5f);
-	SDL_Surface* s = a ? itemCountSurface(text, rowCountSp(g)) : NULL;
-	if (!s)
-		return;
-	bool exact = fabsf(scale - 1.0f) < SCALE_EPS;
-	int h = exact ? s->h : (int)(s->h * scale + 0.5f);
-	// blitCentred puts the top at centre − h/2: the line's top lands exactly on c.top (settled: logoCountTop's value)
-	blitCentred(screen, s, cx, Stack_round(c.top) + h / 2, scale, a, 255);
-}
-
 // A Horizontal Collections item's count-line centre below its slot centre (px at the full size): collLayout's, kept
 // per item so the neighbours don't re-measure their names every frame.
 #define SIDE_OFF_SLOTS 16
@@ -2227,13 +2196,12 @@ static int collCountOff(const RowGeo* g, Entry* e) {
 	return off;
 }
 
-// A Horizontal Consoles or Collections neighbour's "N games" (every visible item but the selection, which drawCount
-// draws): at ROW_SIDE_COUNT_SCALE of the selection's text size (rendered at that size, never scaled down to the item's
-// 0.4-0.5), riding with its item at its alpha: 8 dp × scale under a console's logo as drawn, on a collection's line.
+// A Horizontal Collections neighbour's "N games" (every visible item but the selection, which drawCount draws).
+// Consoles draw none.
 #define ROW_SIDE_COUNT_SCALE 0.75f
 static void drawSideCount(SDL_Surface* screen, const RowGeo* g, Entry* e, TileKind kind, int cx, float scale,
 						  float alpha) {
-	if (g->vertical || (g->kind != ROW_BACKDROP_LOGO && g->kind != ROW_BACKDROP_COLL))
+	if (g->vertical || g->kind != ROW_BACKDROP_COLL)
 		return;
 	Uint8 a = (Uint8)(255.0f * alpha + 0.5f);
 	if (!a)
@@ -2242,21 +2210,7 @@ static void drawSideCount(SDL_Surface* screen, const RowGeo* g, Entry* e, TileKi
 	countLabel(e, kind, text, sizeof(text));
 	if (!text[0])
 		return;
-	int centre;
-	if (g->kind == ROW_BACKDROP_LOGO) {
-		bool pending;
-		int lh = logoHeight(g, e, kind, &pending);
-		if (pending)
-			return;
-		int drawn = lh >= 0 ? lh : logoNameHeight(View_displayName(e), g->full_w, g->full_h, g->k);
-		SDL_Surface* s = itemCountSurface(text, rowCountSp(g) * ROW_SIDE_COUNT_SCALE);
-		if (!s)
-			return;
-		int top = g->cy + (int)((drawn / 2.0f + NX_DPF(ROW_LOGO_COUNT_GAP_DP)) * scale + 0.5f);
-		blitCentred(screen, s, cx, top + s->h / 2, 1.0f, a, 255);
-		return;
-	}
-	centre = g->cy + (int)(collCountOff(g, e) * scale + 0.5f);
+	int centre = g->cy + (int)(collCountOff(g, e) * scale + 0.5f);
 	SDL_Surface* s = itemCountSurface(text, rowCountSp(g) * ROW_SIDE_COUNT_SCALE);
 	if (s)
 		blitCentred(screen, s, cx, centre, 1.0f, a, 255);
@@ -2311,8 +2265,8 @@ static void placeCount(const RowGeo* g, Entry* e, TileKind kind, int sel, bool s
 // The main-menu Carousel's "N games" for the selection: none while the count is unknown.
 static void drawCount(SDL_Surface* screen, const RowGeo* g, Entry* e, TileKind kind, int sel, const RowPlace* at,
 					  bool snap) {
-	if (g->kind != ROW_BACKDROP_LOGO && g->kind != ROW_BACKDROP_COLL) {
-		cnt.sel = -1;
+	if (g->kind != ROW_BACKDROP_COLL) {
+		cnt.sel = -1; // consoles draw no "N games" under the logo
 		return;
 	}
 	char text[32];
@@ -2320,20 +2274,9 @@ static void drawCount(SDL_Surface* screen, const RowGeo* g, Entry* e, TileKind k
 	placeCount(g, e, kind, sel, snap, text[0] != '\0');
 	if (!text[0])
 		return;
-	if (g->kind == ROW_BACKDROP_COLL && cnt.fade_pending) { // the selection's count is known from this frame: fade
+	if (cnt.fade_pending) { // the selection's count is known from this frame: fade
 		cnt.fade_pending = false;
 		tweenStart(&cnt.fade); // animations off: inactive, so it shows at once
-	}
-	if (g->kind == ROW_BACKDROP_LOGO) {
-		if (cnt.pending)
-			return;
-		SDL_Surface* s = countSurface(text, rowCountSp(g), countGrey());
-		if (!s)
-			return;
-		float p = cnt.glide.active ? UI_easeStandard(tweenProgress(&cnt.glide, ROW_COUNT_GLIDE_MS)) : 1.0f;
-		int y = (int)floorf(cnt.y_from + (cnt.y_to - cnt.y_from) * p + 0.5f);
-		blitCentred(screen, s, g->cx, y + s->h / 2, 1.0f, 255, 255);
-		return;
 	}
 	// Collections: on the selected item, wherever the slide has it, at its scale and alpha
 	SDL_Surface* s = countSurface(text, rowCountSp(g), countGrey());
@@ -2909,11 +2852,6 @@ void RowView_prefetchPad(Entry* e, TileKind kind, int box_w, int box_h) {
 		PLAT_textureForSurface(s);
 }
 
-int RowView_countLineH(const RowGeo* g) {
-	TTF_Font* f = UIFont_get(rowCountSp(g), false);
-	return f ? TTF_FontHeight(f) : 0;
-}
-
 void RowView_drawPad(SDL_Surface* screen, Entry* e, TileKind kind, int box_w, int box_h, int cx, int cy, float scale,
 					 float d) {
 	float a = Pad_alpha(d);
@@ -3300,11 +3238,6 @@ void RowView_prefetchItem(const RowGeo* g, Entry* e, TileKind kind, bool side, b
 void RowView_drawSideCaption(SDL_Surface* screen, const RowGeo* g, Entry* e, TileKind kind, int x, int w, int cy,
 							 int body_top, int body_h, bool right) {
 	drawSideCaption(screen, g, e, kind, x, w, cy, body_top, body_h, right);
-}
-
-void RowView_drawItemCount(SDL_Surface* screen, const RowGeo* g, Entry* e, TileKind kind, int cx, int cy, float scale,
-						   float d) {
-	drawItemCount(screen, g, e, kind, cx, cy, scale, d);
 }
 
 void RowView_quit(void) {

@@ -539,16 +539,20 @@ static void drawNameTile(SDL_Surface* dst, SDL_Rect r, const TileSpec* t, float 
 	int pad = NX_DPF(WORD_PAD_DP * s);
 	int avail = r.w - 2 * pad;
 	float start = GRID_COLL_NAME_SP * s;
-	float count_sp = GridLayout_countSp(count_spec_sp, s);
+	float count_sp = count_a ? GridLayout_countSp(count_spec_sp, s) : 0;
 	TTF_Font* f = UIFont_get(start, false);
 	if (!f)
 		return;
 	float sp = Tiles_collNameSp(name, start, count_sp, avail);
-	// fonts last: a font pointer is only good until the next UIFont_get
-	TTF_Font* fc = UIFont_get(count_sp, false);
-	int count_h = fc ? TTF_FontHeight(fc) : 0;
+	// fonts last: a font pointer is only good until the next UIFont_get. No count (count_a 0): the name
+	// fills the tile and the line is not reserved. A console never shows "N games".
+	int count_h = 0, gap = 0;
+	if (count_a) {
+		TTF_Font* fc = UIFont_get(count_sp, false);
+		count_h = fc ? TTF_FontHeight(fc) : 0;
+		gap = NX_DPF(GRID_COLL_COUNT_GAP_DP);
+	}
 	int step = Row_lineStep(NX_SP(sp), GRID_COLL_LINE);
-	int gap = NX_DPF(GRID_COLL_COUNT_GAP_DP);
 	int max_lines = GridLayout_collMaxLines(r.h - 2 * pad - top, step, gap, count_h);
 	f = UIFont_get(sp, false);
 	if (!f)
@@ -656,8 +660,6 @@ static void drawTool(SDL_Surface* dst, SDL_Rect r, const TileSpec* t, float s, S
 		blitLinesCentred(dst, f, &l, r.x + r.w / 2, top + (t->icon_file ? slot_h + gap : 0) - cap, c, a);
 }
 
-// Console logo, inset 22 dp at the sides and 30 dp top and bottom (scaled with the tile); the name when
-// there's no logo (the Grid's as a collection tile, the Carousel's as a word). A Grid tile adds "N games" 6 dp under what's drawn (count_a), the two centred as one block.
 SDL_Surface* Tiles_ringOverlay(int w, int h, SDL_Color c) {
 	int ring = NX_DPF(TILE_RING_DP);
 	int W = w + 2 * ring, H = h + 2 * ring;
@@ -726,9 +728,8 @@ void Tiles_logoBox(int tile_w, int tile_h, float s, int* box_w, int* box_h) {
 }
 
 void Tiles_gridLogoBox(int tile_w, int tile_h, float s, int* box_w, int* box_h) {
+	// The logo fills its box. Consoles no longer reserve a line for "N games".
 	Tiles_logoBox(tile_w, tile_h, s, box_w, box_h);
-	TTF_Font* f = UIFont_get(GridLayout_countSp(GRID_LOGO_COUNT_SP, s), false);
-	*box_h = GridLayout_logoBoxH(*box_h, NX_DPF(GRID_LOGO_COUNT_GAP_DP), f ? TTF_FontHeight(f) : 0);
 }
 
 // The colour mod taking the logos' baked off-white (TILE_MENU_GREY) to channel v.
@@ -737,32 +738,18 @@ static Uint8 logoMod(Uint8 v) {
 	return (Uint8)(m > 255 ? 255 : m);
 }
 
-static void drawLogo(SDL_Surface* dst, SDL_Rect r, const TileSpec* t, float s, SDL_Color c, Uint8 a, Uint8 count_a) {
+// Console logo, inset 22 dp at the sides and 30 dp top and bottom (scaled with the tile). With no logo, the Grid
+// draws the unknown-console emblem over the name and the Carousel draws the name. No "N games" under either.
+static void drawLogo(SDL_Surface* dst, SDL_Rect r, const TileSpec* t, float s, SDL_Color c, Uint8 a) {
 	int box_w, box_h;
 	Tiles_logoBox(r.w, r.h, s, &box_w, &box_h);
-	int gap = NX_DPF(GRID_LOGO_COUNT_GAP_DP);
-	float count_sp = GridLayout_countSp(GRID_LOGO_COUNT_SP, s);
-	// the Grid's logo and its count centred as one block, the count's line reserved whether or not it is known yet (so
-	// nothing moves when it arrives): the logo's box gives that line up (Tiles_gridLogoBox, as warmLogos decodes it).
-	// No count (no_count: the Consoles Grid's header shows the selection's): the logo alone, centred, in the whole box
-	TTF_Font* fcount = !t->carousel && !t->no_count ? UIFont_get(count_sp, false) : NULL;
-	int count_h = fcount ? TTF_FontHeight(fcount) : 0;
-	int logo_box_h = GridLayout_logoBoxH(box_h, gap, count_h);
-	SDL_Surface* logo =
-		(t->logo_file && box_w > 0 && logo_box_h > 0) ? MenuArt_get(t->logo_file, box_w, logo_box_h) : NULL;
+	SDL_Surface* logo = (t->logo_file && box_w > 0 && box_h > 0) ? MenuArt_get(t->logo_file, box_w, box_h) : NULL;
 	if (!logo && !t->carousel) {
-		// the Grid: drawn like a collection tile with the unknown-console emblem over its name, in the off-white at the
-		// content's alpha, and its 13 sp count
-		// 4 dp under the name, the count line reserved unlit
-		drawNameTile(dst, r, t, s, c, a, GRID_LOGO_COUNT_SP, count_a, TILE_UNKNOWN_CONSOLE_ICON);
+		drawNameTile(dst, r, t, s, c, a, GRID_LOGO_COUNT_SP, 0, TILE_UNKNOWN_CONSOLE_ICON);
 		return;
 	}
 	if (!logo) {
-		// fonts in order: a font pointer is only good until the next UIFont_get
-		TTF_Font* fc = (t->count && t->count[0]) ? UIFont_get(count_sp, false) : NULL;
-		int count_h = fc ? TTF_FontHeight(fc) : 0;
-		int bottom = drawWord(dst, r, t->name, s, c, a, gap, count_h);
-		drawCount(dst, t->count, count_sp, r.x + r.w / 2, bottom + gap, UI_accent(), count_a);
+		drawWord(dst, r, t->name, s, c, a, 0, 0);
 		return;
 	}
 	int lw = logo->w, lh = logo->h;
@@ -771,13 +758,11 @@ static void drawLogo(SDL_Surface* dst, SDL_Rect r, const TileSpec* t, float s, S
 	SDL_SetSurfaceColorMod(logo, logoMod(c.r), logoMod(c.g), logoMod(c.b));
 	SDL_SetSurfaceAlphaMod(logo, a);
 	float logo_y, count_y;
-	GridLayout_logoBlock((float)r.y, (float)r.h, (float)lh, (float)gap, (float)count_h, &logo_y, &count_y);
+	GridLayout_logoBlock((float)r.y, (float)r.h, (float)lh, 0, 0, &logo_y, &count_y);
+	(void)count_y;
 	SDL_BlitSurface(logo, NULL, dst, &(SDL_Rect){r.x + (r.w - lw) / 2, (int)floorf(logo_y + 0.5f), lw, lh});
 	SDL_SetSurfaceColorMod(logo, 255, 255, 255);
 	SDL_SetSurfaceAlphaMod(logo, 255);
-	int y = (int)floorf(count_y + 0.5f);
-	// "N games" in the count grey, a step under the logo
-	drawCount(dst, t->count, count_sp, r.x + r.w / 2, y, greyColor(TILE_COUNT_GREY), count_a);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -962,11 +947,11 @@ void Tiles_draw(SDL_Surface* dst, SDL_Rect r, const TileSpec* t, float lit) {
 						(Uint8)(tt.g * lit + TILE_MENU_GREY * (1.0f - lit) + 0.5f),
 						(Uint8)(tt.b * lit + TILE_MENU_GREY * (1.0f - lit) + 0.5f), 255};
 	}
-	// "N games": on every Grid console and collection tile
+	// "N games": on every Grid collection tile. Consoles draw none.
 	Uint8 count_a = logo_look && !t->no_count ? 255 : 0;
 	switch (t->kind) {
 	case TILE_LOGO:
-		drawLogo(dst, r, t, s, c, a, count_a);
+		drawLogo(dst, r, t, s, c, a);
 		break;
 	case TILE_TOOL:
 		drawTool(dst, r, t, s, c, a);

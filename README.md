@@ -20,6 +20,10 @@ Download **`NXRedux-<tag>-brick.zip`** from [Releases](https://github.com/pedals
 
 ### Changelog
 
+**v1.1.4**
+
+- The game count under each console logo is gone.
+
 **v1.1.3**
 
 - Console backgrounds ease into the next picture while you cycle consoles.

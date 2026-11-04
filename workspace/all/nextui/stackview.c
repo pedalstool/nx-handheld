@@ -213,9 +213,8 @@ static void drawItem(SDL_Surface* screen, const StackGeo* sg, Entry* e, TileKind
 	RowView_setMarkLit(kind, -1.0f);
 }
 
-// The Consoles tab's controller art (docs/controller-art.md): a console's pad in 2.6 h x 1.7 h, centred on its logo
-// and "N games" line (the block's centre sits half the gap and the line below the item's: the logo's own height
-// cancels), and the extra room it takes above and below when it is the selection (dp). No pad: 0 room.
+// The Consoles tab's controller art (docs/controller-art.md): a console's pad in 2.6 h x 1.7 h, centred on its logo,
+// and the extra room it takes above and below when it is the selection (dp). No pad: 0 room.
 typedef struct {
 	const char* id;
 	PadSize box;  // dp
@@ -230,7 +229,7 @@ static StackPad padFor(const StackGeo* sg, Entry* e, TileKind kind) {
 		p.id = NULL;
 		return p;
 	}
-	p.off = (ROW_LOGO_COUNT_GAP_DP + RowView_countLineH(&sg->g) / pxPerDp()) / 2;
+	p.off = 0; // centred on the logo (no "N games" line under it)
 	PadSize drawn = Pad_fit(row->aspect, p.box.w, p.box.h);
 	Stack_padExtra(&sg->ss, drawn.h, p.off, PAD_CLEAR_DP, &p.up, &p.dn);
 	return p;
@@ -500,22 +499,10 @@ void StackView_render(SDL_Surface* screen, int lastScreen) {
 		drawItem(screen, &sg, e, k, &it, i == sel);
 	}
 
-	// "N games". Consoles': on its own item, under that logo as drawn at the item's live place and scale, on the items
-	// within a step of the position (the outgoing selection's fading out as the incoming one's fades in), so a logo
-	// sliding through the selection never runs under a count left in the slot (device fix round 2). Collections': on
-	// the selected item itself (RowView_drawCount, fading in); nothing in a game list. A game list's caption sits
+	// "N games" on a collection. Consoles draw none under the logo. A game list's caption sits
 	// beside the stack, centred on the selection (its game info requested last: GameInfo's queue keeps the latest).
 	Entry* e = top->entries->items[sel];
-	if (kind == STACK_MAIN_CONSOLES) {
-		for (int i = first; i <= last; i++) {
-			StackItem it = Stack_item(&sg.ss, (float)i, pos);
-			if (it.d >= 1.0f)
-				continue;
-			Entry* ie = top->entries->items[i];
-			RowView_drawItemCount(screen, &sg.g, ie, RowView_kindFor(i, ie), sg.g.cx, itemCy(&sg, &it), it.scale,
-								  it.d);
-		}
-	} else {
+	if (kind != STACK_MAIN_CONSOLES) {
 		StackItem sit = Stack_item(&sg.ss, (float)sel, pos);
 		RowPlace at = {0, itemCy(&sg, &sit) - sg.g.cy, sit.scale, sit.alpha, sit.visible};
 		RowView_drawCount(screen, &sg.g, e, RowView_kindFor(sel, e), sel, &at, snap);

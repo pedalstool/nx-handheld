@@ -107,18 +107,19 @@ static float litAmount(int index) {
 static bool grid_sprites; // this frame draws GPU sprites (defined with the tile drawing, below)
 
 // The Consoles tab in Grid (Layouts > Top bar shown): the selected console's name in the top bar's row, where a
-// page title sits, its "N games" under it; the tiles show the logo alone (TileSpec.no_count).
+// page title sits. The tiles show the logo alone.
 static bool consoleHeader(void) {
 	return stack && stack->count == 1 && GameList_lookTab() == MENU_TAB_CONSOLES && CFG_getPageTitle();
 }
 
-// The header's "N games": the page title's size, as the console's name over it.
+// The line under a game list's title: the page title's size.
 static TTF_Font* headerCountFont(void) {
 	return UI_pageTitleFont();
 }
 
-// The header's lines (px): the name's top (centred on the top bar, as a page title), the count's top under it, and the
-// body's top under the count (never above the bar's bottom). Without the header: the bar's bottom.
+// The header's lines (px): the name's top (centred on the top bar, as a page title) and, for a game list, the
+// info line's top under it. The body's top is under that line (never above the bar's bottom). Without the
+// header: the bar's bottom. A console's name stays in the bar; there is no game count under it.
 // A game list's Grid (Layouts > Top bar and Extra info shown): the selected game's play time and achievements move
 // off its tile into the top bar's rows, two lines at most (kept whether or not the game fills them, so the tiles don't
 // move): with achievements, "Today - 1h 27m · 0 of 92" then "Next: …" in place of the page title (the console's
@@ -162,8 +163,8 @@ static int headerLayout(int* name_y, int* count_y) {
 	if (name_y)
 		*name_y = ny;
 	if (count_y)
-		*count_y = cy;									 // the line under the title (the console's count, a game's first info line)
-	int lines = consoleHeader() || gameHeader() ? 1 : 0; // under the title, each the title font's height (two in all)
+		*count_y = cy; // the line under the title (a game's first info line)
+	int lines = gameHeader() ? 1 : 0; // under the title, the title font's height
 	int bottom = cy + (lines > 0 ? (lines - 1) * fh + ch : 0) + NX_DP(HEADER_GAP_DP);
 	return lines > 0 && bottom > bar ? bottom : bar;
 }
@@ -236,35 +237,26 @@ static void drawGameHeader(SDL_Surface* screen, int sel) {
 	}
 }
 
-// The selection's name and its "N games" (grey; nothing while unknown), from the side margin, clear of the status
-// icons.
+// The selection's name, from the side margin, clear of the status icons.
 static void drawHeader(SDL_Surface* screen, int sel) {
 	if (!consoleHeader() || sel < 0 || sel >= top->entries->count)
 		return;
 	Entry* e = top->entries->items[sel];
-	int name_y, count_y;
-	headerLayout(&name_y, &count_y);
+	int name_y;
+	headerLayout(&name_y, NULL);
 	int x = NX_DP(NX_MENU_GUTTER_DP), max_w = screen->w - x - UI_statusWidth() - NX_DP(NX_MENU_GUTTER_DP);
 	SDL_Rect clip;
 	SDL_GetClipRect(screen, &clip);
 	SDL_SetClipRect(screen, NULL);
 	TTF_Font* f = UI_pageTitleFont();
 	SDL_Surface* name = f ? GFX_getCachedText(f, (char*)View_displayName(e), UI_titleText()) : NULL;
-	char count[32];
-	GameInfo_gamesLabel(Content_consoleGameCount(e), count, sizeof(count));
-	TTF_Font* fc = count[0] ? headerCountFont() : NULL;
-	SDL_Surface* c = fc ? GFX_getCachedText(fc, count, COLOR_GRAY) : NULL;
-	SDL_Surface* lines[2] = {name, c};
-	int ys[2] = {name_y, count_y};
-	for (int i = 0; i < 2; i++) {
-		if (!lines[i])
-			continue;
-		SDL_Rect src = {0, 0, lines[i]->w < max_w ? lines[i]->w : max_w, lines[i]->h};
-		SDL_Rect dst = {x, ys[i], src.w, src.h};
-		if (grid_sprites) // a sprite frame uploads only the bars: the count's line reaches under the top one
-			PLAT_spriteAdd(PLAT_textureForSurface(lines[i]), &src, &dst, 255, NULL);
+	if (name) {
+		SDL_Rect src = {0, 0, name->w < max_w ? name->w : max_w, name->h};
+		SDL_Rect dst = {x, name_y, src.w, src.h};
+		if (grid_sprites) // a sprite frame uploads only the bars: the name's line reaches under the top one
+			PLAT_spriteAdd(PLAT_textureForSurface(name), &src, &dst, 255, NULL);
 		else
-			SDL_BlitSurface(lines[i], &src, screen, &dst);
+			SDL_BlitSurface(name, &src, screen, &dst);
 	}
 	SDL_SetClipRect(screen, &clip);
 }
@@ -313,9 +305,7 @@ static void tileCount(int i, char* out, size_t size) {
 		return;
 	Entry* e = top->entries->items[i];
 	TileKind k = RowView_kindFor(i, e);
-	if (k == TILE_LOGO)
-		GameInfo_gamesLabel(Content_consoleGameCount(e), out, size);
-	else if (k == TILE_COLLECTION)
+	if (k == TILE_COLLECTION)
 		GameInfo_gamesLabel(CollCount_get(e->path), out, size);
 }
 
@@ -326,17 +316,14 @@ static const char* plainCount(int i, char* out, size_t size, bool* asked) {
 		return NULL;
 	Entry* e = top->entries->items[i];
 	TileKind k = RowView_kindFor(i, e);
-	if (k == TILE_LOGO) {
-		GameInfo_gamesLabel(Content_consoleGameCount(e), out, size);
+	if (k == TILE_COLLECTION) {
+		int n = CollCount_get(e->path);
+		if (n < 0)
+			*asked = true;
+		GameInfo_gamesLabel(n, out, size);
 		return out;
 	}
-	if (k != TILE_COLLECTION)
-		return NULL;
-	int n = CollCount_get(e->path);
-	if (n < 0)
-		*asked = true;
-	GameInfo_gamesLabel(n, out, size);
-	return out;
+	return NULL;
 }
 
 ///////////////////////////////////////
@@ -614,7 +601,7 @@ static void tileSpec(int i, int tw, int th, float scale, TileSpec* t, char logo[
 	*t = (TileSpec){.kind = kind, .name = View_displayName(e), .scale = scale};
 	if (kind == TILE_LOGO) {
 		t->logo_file = MenuLogo_fileFor(e->path, logo, MAX_PATH);
-		t->no_count = consoleHeader(); // the selection's count is in the header
+		t->no_count = true; // no "N games" under the logo
 	} else if (kind == TILE_TOOL) {
 		t->icon_file = Tiles_toolIcon(t->name);
 		if (!t->icon_file) {
@@ -653,10 +640,7 @@ static void warmLogos(int n, int sel, int tw, int th, float scale) {
 	seen_serial = top->serial, seen_gen = MenuTabs_generation(), seen_sel = sel, seen_n = n, seen_tw = tw;
 	seen_th = th;
 	int bw, bh;
-	if (consoleHeader()) // as drawLogo decodes them: the whole box without a count line, else less it
-		Tiles_logoBox(tw, th, scale, &bw, &bh);
-	else
-		Tiles_gridLogoBox(tw, th, scale, &bw, &bh);
+	Tiles_logoBox(tw, th, scale, &bw, &bh);
 	if (bw <= 0 || bh <= 0)
 		return;
 	for (int d = 0; d <= LOGO_WARM_RADIUS; d++) {

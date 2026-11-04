@@ -39,8 +39,7 @@ typedef struct {
 	// Leave out the lit caption (the fade, the name and the info): the Grid caches a tile's lit look without it, so
 	// the info arriving later doesn't recompose the tile, and draws it per frame with Tiles_drawCaption.
 	bool no_caption;
-	// a console's "N games" left off (its line too: the logo alone, centred): the Consoles Grid shows the selection's
-	// in its header (gridview.c)
+	// a console's "N games" left off (the logo alone, centred)
 	bool no_count;
 	// the Grid's selection ring (Layouts > Grid selection ring): lit, a TILE_RING_DP ring in the Main color outside r
 	// (the caller leaves that room around the tile)
@@ -74,7 +73,7 @@ Uint8 Tiles_borderAlpha(void);
 SDL_Surface* Tiles_toolIconSized(const char* file, int ink_h, SDL_Rect* ink);
 // The box a tile_w x tile_h tile's console logo is fitted in (MenuArt_get's), at tile scale s.
 void Tiles_logoBox(int tile_w, int tile_h, float s, int* box_w, int* box_h);
-// The Grid's console logo box: Tiles_logoBox less its "N games" line (the logo and count are centred as one block).
+// The Grid's console logo box: Tiles_logoBox (no "N games" line under the logo).
 void Tiles_gridLogoBox(int tile_w, int tile_h, float s, int* box_w, int* box_h);
 // The caption surface Tiles_drawCaption blends at r (tile-sized, cached; do not free), or NULL when it draws none.
 SDL_Surface* Tiles_captionSurface(SDL_Rect r, const TileSpec* t, float lit);

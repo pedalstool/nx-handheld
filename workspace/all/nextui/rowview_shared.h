@@ -76,8 +76,8 @@ SDL_Surface* RowView_slotItem(const RowGeo* g, Entry* e, TileKind kind, bool sid
 void RowView_setMarkLit(TileKind kind, float d);
 // s centred on (cx, cy), scaled by factor (1:1 at 1), at alpha a, onto an opaque dst.
 void RowView_blitItem(SDL_Surface* dst, SDL_Surface* s, int cx, int cy, float factor, Uint8 a);
-// The main-menu "N games" line for the selection `sel` drawn at `at` (Consoles: under the selection's logo as drawn,
-// gliding; Collections: on the item, fading in). Nothing for other kinds. `snap`: a new list, tab or screen.
+// The main-menu "N games" line for a collection, the selection `sel` drawn at `at` (fading in). Nothing for consoles
+// or other kinds. `snap`: a new list, tab or screen.
 void RowView_drawCount(SDL_Surface* screen, const RowGeo* g, Entry* e, TileKind kind, int sel, const RowPlace* at,
 					   bool snap);
 
@@ -127,13 +127,5 @@ bool RowView_drawConsoleLogo(SDL_Surface* screen, const RowGeo* g, Entry* e, Til
 							 Uint8 a, bool selected);
 void RowView_warmConsoleArt(int slot_w, int slot_h, int pad_w, int pad_h, int sel);
 void RowView_prefetchPad(Entry* e, TileKind kind, int box_w, int box_h);
-// The Consoles "N games" line's height (px) for this geometry's text scale.
-int RowView_countLineH(const RowGeo* g);
-
-// A Vertical stack's Consoles "N games" on its own item e (centre cx, cy px, live scale, d steps from the position):
-// 8 dp under the item's logo as drawn, scaled with it, fading 1 − d (Stack_countOn). Nothing for other kinds. The
-// stack draws it on the items within a step of the position, instead of RowView_drawCount's fixed-slot glide.
-void RowView_drawItemCount(SDL_Surface* screen, const RowGeo* g, Entry* e, TileKind kind, int cx, int cy, float scale,
-						   float d);
 
 #endif
