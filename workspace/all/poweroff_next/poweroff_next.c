@@ -223,13 +223,10 @@ static void motor_drive(int on) {
 	VIB_levelRange(motor_level, &floor_pct, &ceil_pct);
 	int pct = on ? floor_pct : 0;
 #ifdef RUMBLE_VOLTAGE_PATH
-	// tg5040 family: voltage-driven motor, Brick Pro capped (see platform.h)
-	const char* device = getenv("DEVICE");
-	int max_uv = (device && strcmp(device, "brickpro") == 0) ? RUMBLE_MAX_VOLTAGE_BRICKPRO : RUMBLE_MAX_VOLTAGE;
-	putInt(RUMBLE_VOLTAGE_PATH, on ? RUMBLE_MIN_VOLTAGE + (int)((long long)(max_uv - RUMBLE_MIN_VOLTAGE) * pct / 100) : 0);
+	// tg5040 Brick/Hammer: voltage-driven motor
+	putInt(RUMBLE_VOLTAGE_PATH, on ? RUMBLE_MIN_VOLTAGE + (int)((long long)(RUMBLE_MAX_VOLTAGE - RUMBLE_MIN_VOLTAGE) * pct / 100) : 0);
 	putInt(RUMBLE_PATH, on ? 1 : 0);
 #else
-	// tg5050: PWM level drives the motor directly (no rumble GPIO exists)
 	putInt(RUMBLE_LEVEL_PATH, (int)(0xFFFFLL * pct / 100));
 #endif
 }
