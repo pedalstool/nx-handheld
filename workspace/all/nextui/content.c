@@ -327,6 +327,8 @@ void Content_setSearchQuery(const char* query) {
 Directory* Directory_new(char* path, int selected) {
 	char display_name[MAX_PATH];
 	getDisplayName(path, display_name);
+	if (exactMatch(path, FAUX_RECENT_PATH))
+		snprintf(display_name, sizeof(display_name), "Last Played");
 
 	static unsigned next_serial = 0;
 	Directory* self = malloc(sizeof(Directory));

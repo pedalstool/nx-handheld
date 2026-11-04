@@ -7,6 +7,9 @@ Brick / Brick Hammer fork of [NX Redux](https://github.com/nx-redux/nx-handheld)
 - **Brick / Hammer only** — same `tg5040` `DEVICE=brick` build; Brick Pro, Smart Pro, and Smart Pro S are not supported
 - **No media apps** — Music Player, Media Player, Image Viewer, and the OSD music widget are removed
 - **Console text color** — Settings includes console title / text color (from console-text-color v6)
+- **Faster folder/console backgrounds** — backgrounds stay on screen while the next one loads, and recent folders are cached so revisiting a console does not wait on a full decode again (from [BRICK-UI](https://github.com/bebeidon/BRICK-UI))
+- **Last Played** — "Recently Played" / Game Switcher "Recent" labels are "Last Played" (from [BRICK-UI](https://github.com/bebeidon/BRICK-UI))
+- **Battery % while charging** — with battery percentage enabled, the charge level stays visible while plugged in
 - **Updates from this fork** — in-device updater checks `pedalstool/nx-handheld` releases
 
 ## Releases
@@ -23,6 +26,7 @@ Download **`NXRedux-<tag>-brick.zip`** from [Releases](https://github.com/pedals
 ## Credits
 
 - [nx-redux](https://github.com/nx-redux) / NX Redux maintainers for the base firmware
+- [bebeidon](https://github.com/bebeidon/BRICK-UI) for folder background caching and Last Played naming
 - [ro8inmorgan](https://github.com/ro8inmorgan), [frysee](https://github.com/frysee) and all contributors for developing NextUI
 - [clintonium-119](https://github.com/clintonium-119) for the original [RetroAchievements integration](https://github.com/LoveRetro/NextUI/pull/633) in NextUI
 - [carroarmato0](https://github.com/carroarmato0) for the [minarch modularization](https://github.com/LoveRetro/NextUI/pull/721)

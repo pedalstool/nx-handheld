@@ -13,8 +13,8 @@ enum {
 	SLIDE_UP = 4,
 };
 
-// Background loading callback
-typedef void (*BackgroundLoadedCallback)(SDL_Surface* surface);
+// Background loading callback (imagePath is the request that finished; NULL path = hide)
+typedef void (*BackgroundLoadedCallback)(SDL_Surface* surface, const char* imagePath);
 
 // Screen surface (owned by nextui.c)
 extern SDL_Surface* screen;
@@ -37,7 +37,8 @@ void cleanupImageLoaderPool(void);
 
 // Background loading
 void startLoadFolderBackground(const char* imagePath, BackgroundLoadedCallback callback);
-void onBackgroundLoaded(SDL_Surface* surface);
+void onBackgroundLoaded(SDL_Surface* surface, const char* imagePath);
+void clearFolderBackground(void);
 
 // Thumbnail loading. `compose` (THUMB_COMPOSE_*) is how the List shows the picture: the screenshot's faded
 // background (ArtBg_compose, at half size) or the hard-edged fitted box at full size (ArtBg_composeFit, Layouts >

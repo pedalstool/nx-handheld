@@ -341,7 +341,7 @@ static void resolveAndLoadBackground(Entry* entry, const char* rompath, const ch
 		if (folderBgPath[0]) {
 			folderBgPath[0] = '\0';
 			*lastType = -1;
-			onBackgroundLoaded(NULL);
+			onBackgroundLoaded(NULL, NULL);
 		}
 		*list_show_entry_names = true;
 		bgResolveForcedNames = true; // replay this on per-entry skips above
@@ -363,7 +363,7 @@ static void resolveAndLoadBackground(Entry* entry, const char* rompath, const ch
 	if (bgPath[0] && exists(bgPath))
 		startLoadFolderBackground(bgPath, onBackgroundLoaded);
 	else {
-		onBackgroundLoaded(NULL);
+		onBackgroundLoaded(NULL, NULL);
 		*list_show_entry_names = true;
 	}
 }
@@ -2587,7 +2587,7 @@ static void clearBackground(void) {
 	folderBgPath[0] = '\0';
 	bgLastType = -1;
 	bgResolveValid = false;
-	onBackgroundLoaded(NULL); // a no-op while nothing is loaded
+	clearFolderBackground(); // a no-op while nothing is loaded
 }
 
 // A Grid, Carousel or Backdrop screen draws on plain black (or the Backdrop picture, on `screen`): no bg.png,

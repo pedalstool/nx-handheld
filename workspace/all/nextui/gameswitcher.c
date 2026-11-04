@@ -104,8 +104,8 @@ static void gs_listBuild(void) {
 	// Games of one name from different consoles (Tetris on NES and Game Boy) read as a game list's do: the name, then
 	// its core's tag dimmed after it ("Tetris (GB)"); two of one name and tag, the file's name instead
 	EntryNames_labelSwitcher(gs_entries);
-	gs_dir.path = (char*)"Recent";
-	gs_dir.name = (char*)"Recent";
+	gs_dir.path = (char*)"Last Played";
+	gs_dir.name = (char*)"Last Played";
 	gs_dir.entries = gs_entries;
 	gs_dir.serial = 0x40000000u | (++gs_gen & 0x3FFFFFFFu);
 	gs_dir.selected = switcher_selected;
@@ -233,10 +233,10 @@ void GameSwitcher_resetSelection(void) {
 static const char* selectedName(void) {
 	static char name_buf[MAX_PATH]; // getDisplayName requires a MAX_PATH out buffer
 	if (gs_count <= 0)
-		return "Recents";
+		return "Last Played";
 	Recent* recent = Recents_at(gs_indices[switcher_selected]);
 	if (!recent)
-		return "Recents";
+		return "Last Played";
 	if (recent->alias) {
 		strncpy(name_buf, recent->alias, sizeof(name_buf) - 1);
 		name_buf[sizeof(name_buf) - 1] = '\0';

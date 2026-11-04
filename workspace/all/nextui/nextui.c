@@ -517,11 +517,13 @@ int main(int argc, char* argv[]) {
 			char list_title[MAX_PATH * 2];
 			const char* menu_title;
 			if (currentScreen == SCREEN_GAMESWITCHER)
-				menu_title = sw_list ? "Recent" : NULL; // Full screen draws the game's name itself, larger
+				menu_title = sw_list ? "Last Played" : NULL; // Full screen draws the game's name itself, larger
 			else if (!CFG_getPageTitle())
 				menu_title = NULL; // Layouts > Top bar: Hide (no title, stats or header); the status icons stay
 			else if (stack->count > 1 && drawScreen == SCREEN_GAMELIST && GridView_headerHidesTitle())
 				menu_title = NULL; // the Grid's header has the selected game's info on the title's line
+			else if (stack->count > 1 && top && exactMatch(top->path, FAUX_RECENT_PATH))
+				menu_title = "Last Played";
 			else if (stack->count > 1)
 				menu_title = listTitle(list_title, sizeof(list_title));
 			else if (MenuTabs_count() <= 1)

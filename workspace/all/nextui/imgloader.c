@@ -96,6 +96,76 @@ static unsigned thumb_gen = 0;
 // thumbbmp is a fitted box (THUMB_COMPOSE_FIT), placed at ArtBg_fitRect rather than ArtBg_originX (thumbMutex)
 static bool thumb_fit = false;
 
+// Folder/console backgrounds: keep the last decoded surface on the GPU while a new one loads, and cache recent
+// folders so revisiting a console is instant (ported from bebeidon/BRICK-UI).
+static char desiredFolderBgPath[MAX_PATH] = {0};
+static bool folderBgVisible = true;
+static bool folderBgLoading = false;
+
+#define FOLDER_BG_CACHE_SIZE 30
+
+typedef struct {
+	char path[MAX_PATH];
+	SDL_Surface* surface;
+	unsigned long used;
+	bool occupied;
+} FolderBgCacheEntry;
+
+static FolderBgCacheEntry folderBgCache[FOLDER_BG_CACHE_SIZE];
+static unsigned long folderBgCacheClock = 0;
+
+static SDL_Surface* folderBgCacheGet(const char* path) {
+	for (int i = 0; i < FOLDER_BG_CACHE_SIZE; i++) {
+		if (folderBgCache[i].occupied && strcmp(folderBgCache[i].path, path) == 0) {
+			folderBgCache[i].used = ++folderBgCacheClock;
+			return SDL_ConvertSurface(folderBgCache[i].surface, folderBgCache[i].surface->format, 0);
+		}
+	}
+	return NULL;
+}
+
+/* Takes ownership of surface. Must be called with bgMutex held. */
+static void folderBgCachePut(const char* path, SDL_Surface* surface) {
+	int target = -1;
+	unsigned long oldest = ~0UL;
+
+	for (int i = 0; i < FOLDER_BG_CACHE_SIZE; i++) {
+		if (folderBgCache[i].occupied && strcmp(folderBgCache[i].path, path) == 0) {
+			target = i;
+			break;
+		}
+	}
+	if (target < 0) {
+		for (int i = 0; i < FOLDER_BG_CACHE_SIZE; i++) {
+			if (!folderBgCache[i].occupied) {
+				target = i;
+				break;
+			}
+			if (folderBgCache[i].used < oldest) {
+				oldest = folderBgCache[i].used;
+				target = i;
+			}
+		}
+	}
+
+	if (folderBgCache[target].surface)
+		SDL_FreeSurface(folderBgCache[target].surface);
+
+	snprintf(folderBgCache[target].path, sizeof(folderBgCache[target].path), "%s", path);
+	folderBgCache[target].surface = surface;
+	folderBgCache[target].used = ++folderBgCacheClock;
+	folderBgCache[target].occupied = true;
+}
+
+static void folderBgCacheClear(void) {
+	for (int i = 0; i < FOLDER_BG_CACHE_SIZE; i++) {
+		if (folderBgCache[i].surface)
+			SDL_FreeSurface(folderBgCache[i].surface);
+		folderBgCache[i] = (FolderBgCacheEntry){0};
+	}
+	folderBgCacheClock = 0;
+}
+
 // Atomics: the UI thread polls them without the locks (backgroundLayerPending); writers still hold their mutex
 // where the change goes with the surfaces it guards (bgMutex: folderbgbmp, thumbMutex: thumbbmp).
 static SDL_atomic_t folderbgchanged;
@@ -251,7 +321,7 @@ static int loadWorker(void* arg) {
 			result = fitBackground(result);
 
 		if (task->callback)
-			task->callback(result);
+			task->callback(result, task->imagePath);
 		else if (result)
 			SDL_FreeSurface(result); // no consumer — don't leak the decode
 		free(task);
@@ -402,6 +472,20 @@ static int thumbLoadWorker(void* arg) {
 ///////////////////////////////////////
 // Public loading functions
 
+void clearFolderBackground(void) {
+	SDL_LockMutex(bgMutex);
+	desiredFolderBgPath[0] = '\0';
+	folderBgVisible = false;
+	folderBgLoading = false;
+	if (folderbgbmp) {
+		SDL_FreeSurface(folderbgbmp);
+		folderbgbmp = NULL;
+	}
+	SDL_AtomicSet(&folderbgchanged, 1);
+	setNeedDraw(1);
+	SDL_UnlockMutex(bgMutex);
+}
+
 void startLoadFolderBackground(const char* imagePath, BackgroundLoadedCallback callback) {
 	LoadBackgroundTask* task = malloc(sizeof(LoadBackgroundTask));
 	if (!task)
@@ -410,29 +494,79 @@ void startLoadFolderBackground(const char* imagePath, BackgroundLoadedCallback c
 	snprintf(task->imagePath, sizeof(task->imagePath), "%s", imagePath);
 	task->callback = callback;
 	task->compose = THUMB_COMPOSE_BG;
+
+	SDL_LockMutex(bgMutex);
+	snprintf(desiredFolderBgPath, sizeof(desiredFolderBgPath), "%s", imagePath);
+
+	/* Instant swap when this folder was decoded recently. */
+	SDL_Surface* cached = folderBgCacheGet(imagePath);
+	if (cached) {
+		folderBgLoading = false;
+		if (folderbgbmp)
+			SDL_FreeSurface(folderbgbmp);
+		folderbgbmp = cached;
+		folderBgVisible = true;
+		SDL_AtomicSet(&folderbgchanged, 1);
+		setNeedDraw(1);
+		SDL_UnlockMutex(bgMutex);
+		free(task);
+		return;
+	}
+
+	/* Keep the current GPU layer until the selected folder's background is ready. */
+	folderBgVisible = false;
+	folderBgLoading = true;
+	SDL_UnlockMutex(bgMutex);
+
 	enqueueTask(&bgQueue, task);
 }
 
-void onBackgroundLoaded(SDL_Surface* surface) {
+void onBackgroundLoaded(SDL_Surface* surface, const char* imagePath) {
 	SDL_LockMutex(bgMutex);
-	// "no background" replacing "no background" is a no-op: don't set
-	// folderbgchanged, or updateBackgroundLayer re-uploads the full-screen
-	// black layer (~25ms) for nothing — one hitch per selection change.
-	if (!surface && !folderbgbmp) {
+
+	/* Ignore results from a request that is no longer selected. */
+	if (imagePath && strcmp(imagePath, desiredFolderBgPath) != 0) {
 		SDL_UnlockMutex(bgMutex);
+		if (surface)
+			SDL_FreeSurface(surface);
 		return;
 	}
-	SDL_AtomicSet(&folderbgchanged, 1);
-	if (folderbgbmp)
-		SDL_FreeSurface(folderbgbmp);
-	if (!surface) {
-		folderbgbmp = NULL;
+
+	/* Failed loads leave the current surface and cache intact. */
+	if (imagePath && !surface) {
+		folderBgLoading = false;
+		SDL_AtomicSet(&folderbgchanged, 1);
 		setNeedDraw(1);
 		SDL_UnlockMutex(bgMutex);
 		return;
 	}
-	folderbgbmp = surface;
-	setNeedDraw(1);
+
+	/* NULL path means hide the background. Keep the display surface so a later
+	   cache hit can restore it without a disk decode. */
+	if (!imagePath) {
+		desiredFolderBgPath[0] = '\0';
+		folderBgLoading = false;
+		folderBgVisible = false;
+		SDL_AtomicSet(&folderbgchanged, 1);
+		setNeedDraw(1);
+		SDL_UnlockMutex(bgMutex);
+		return;
+	}
+
+	/* The cache owns the decoded surface; the renderer gets its own copy. */
+	folderBgLoading = false;
+	SDL_Surface* displayCopy = SDL_ConvertSurface(surface, surface->format, 0);
+	folderBgCachePut(imagePath, surface);
+
+	if (displayCopy) {
+		if (folderbgbmp)
+			SDL_FreeSurface(folderbgbmp);
+		folderbgbmp = displayCopy;
+		folderBgVisible = true;
+		SDL_AtomicSet(&folderbgchanged, 1);
+		setNeedDraw(1);
+	}
+
 	SDL_UnlockMutex(bgMutex);
 }
 
@@ -661,9 +795,12 @@ void updateBackgroundLayer(SDL_Surface* blackBG) {
 	// taken (and cleared) up front: a request made while this rebuild runs is kept for the next one
 	bool rebuild = SDL_AtomicSet(&folderbgchanged, 0) || !bg_layer_known ||
 				   PLAT_layerSerial(LAYER_BACKGROUND) != bg_layer_serial;
+	/* Keep the current rendered layer during an asynchronous bg load. */
+	if (folderBgLoading)
+		rebuild = false;
 	if (rebuild) {
 		GFX_drawOnLayer(blackBG, 0, 0, screen->w, screen->h, 1.0f, 0, LAYER_BACKGROUND);
-		if (folderbgbmp)
+		if (folderBgVisible && folderbgbmp)
 			GFX_drawOnLayer(folderbgbmp, 0, 0, screen->w, screen->h, 1.0f, 0, LAYER_BACKGROUND);
 		bg_layer_serial = PLAT_layerSerial(LAYER_BACKGROUND);
 		bg_layer_known = true;
@@ -788,6 +925,14 @@ void cleanupImageLoaderPool(void) {
 
 	// Clear thumbnail cache
 	thumbCacheClear();
+	folderBgCacheClear();
+	if (folderbgbmp) {
+		SDL_FreeSurface(folderbgbmp);
+		folderbgbmp = NULL;
+	}
+	desiredFolderBgPath[0] = '\0';
+	folderBgVisible = false;
+	folderBgLoading = false;
 
 	// Acquire and release each mutex before destroying to ensure no thread is in a critical section
 	// This creates a memory barrier and ensures proper synchronization
