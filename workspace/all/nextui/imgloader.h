@@ -61,8 +61,10 @@ void thumbCacheInvalidate(const char* path);
 void thumbCacheForgetMisses(void);
 int thumbCheckAsyncLoaded(void);
 
-// Layer render helpers shared by the main render loop (moved from nextui.c)
-void updateBackgroundLayer(SDL_Surface* blackBG);
+// Layer render helpers shared by the main render loop (moved from nextui.c).
+// defer_upload: a full-surface reupload (~25ms) waits, and the change stays latched. A console-background
+// crossfade still runs.
+void updateBackgroundLayer(SDL_Surface* blackBG, bool defer_upload);
 // Re-upload the folder background (loaded or none) to LAYER_BACKGROUND on the
 // next render pass. For callers that wiped the GPU layers but stay on the same
 // entry (UIKeyboard_open clears LAYER_ALL; a cancelled Search/Rename returns to

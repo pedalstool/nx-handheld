@@ -1918,6 +1918,28 @@ void PLAT_targetEnd(void) {
 		SDL_SetRenderTarget(vid.renderer, NULL);
 }
 
+void PLAT_copyLayerTo(int layer, SDL_Texture* dst) {
+	if (!dst || !vid.renderer)
+		return;
+	SDL_Texture* targets[6] = {NULL, vid.target_layer1, vid.target_layer2, vid.target_layer3, vid.target_layer4,
+							   vid.target_layer5};
+	int l = layer >= 1 && layer <= 5 ? layer : 1;
+	SDL_Texture* src = targets[l];
+	if (!src)
+		return;
+	SDL_BlendMode bm;
+	Uint8 alpha = 255;
+	SDL_GetTextureBlendMode(src, &bm);
+	SDL_GetTextureAlphaMod(src, &alpha);
+	SDL_SetTextureBlendMode(src, SDL_BLENDMODE_NONE);
+	SDL_SetTextureAlphaMod(src, 255);
+	SDL_SetRenderTarget(vid.renderer, dst);
+	SDL_RenderCopy(vid.renderer, src, NULL, NULL);
+	SDL_SetRenderTarget(vid.renderer, NULL);
+	SDL_SetTextureBlendMode(src, bm);
+	SDL_SetTextureAlphaMod(src, alpha);
+}
+
 void PLAT_freeTexture(SDL_Texture* t) {
 	if (!t)
 		return;

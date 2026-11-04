@@ -849,6 +849,8 @@ SDL_Texture* PLAT_targetCreate(int w, int h);
 void PLAT_targetBegin(SDL_Texture* t);
 void PLAT_targetDraw(SDL_Texture* tex, const SDL_Rect* dst, Uint8 alpha);
 void PLAT_targetEnd(void);
+// Copy a layer's texture onto dst (a render target), opaque. Does not clear or draw on the layer.
+void PLAT_copyLayerTo(int layer, SDL_Texture* dst);
 // PLAT_spriteAddUnder for an opaque texture drawn at full alpha over the whole screen: drawn without blending, and
 // what is under it (the background layers, the under-sprites added before it) is skipped, being covered.
 void PLAT_spriteAddUnderOpaque(SDL_Texture* tex, const SDL_Rect* dst);

@@ -15,6 +15,7 @@
 #include "utils.h"
 #include "homeart.h"
 #include "ui_image.h"
+#include "ui_ease.h"
 
 ///////////////////////////////////////
 // Internal task queue structures
@@ -174,6 +175,32 @@ static void folderBgCacheClear(void) {
 static SDL_atomic_t folderbgchanged;
 static SDL_atomic_t thumbchanged;
 
+// Identity of folderbgbmp. Bumped when the shown picture is replaced, so a crossfade can tell a new console
+// from the one already on the layer. 0 is "nothing" (hidden, or not shown yet).
+static unsigned folderbg_gen;
+static unsigned folderbg_shown_gen;
+
+// Crossfade of the folder background (console cycling). The picture on the layer is snapshotted on the GPU and
+// the incoming one eases over it; a further move retargets from that blend, so a held D-pad doesn't pop.
+#define FOLDER_BG_FADE_MS 300 // in step with the console row's slide
+static bool folderbg_fading;
+static unsigned folderbg_fade_gen;
+static uint32_t folderbg_fade_start;
+static uint32_t folderbg_fade_seen;
+static SDL_Texture* folderbg_from_tex;
+static SDL_Texture* folderbg_to_tex;
+static SDL_Texture* folderbg_comp;
+static int folderbg_tex_w, folderbg_tex_h;
+
+static void folderBgFadeStop(void) {
+	folderbg_fading = false;
+	folderbg_fade_gen = 0;
+	folderbg_fade_start = 0;
+	folderbg_fade_seen = 0;
+	PLAT_freeTexture(folderbg_to_tex);
+	folderbg_to_tex = NULL;
+}
+
 /* Show surface as the folder background (takes the caller's display ref). bgMutex held.
    The same pointer means we already hold a ref: drop the one just passed in. A hide keeps
    that surface but skips it on the layer, so becoming visible again has to redraw. */
@@ -190,6 +217,8 @@ static void folderBgShow(SDL_Surface* surface) {
 	if (folderbgbmp)
 		SDL_FreeSurface(folderbgbmp);
 	folderbgbmp = surface;
+	if (++folderbg_gen == 0)
+		folderbg_gen = 1;
 	folderBgVisible = true;
 	SDL_AtomicSet(&folderbgchanged, 1);
 	setNeedDraw(1);
@@ -505,6 +534,9 @@ void clearFolderBackground(void) {
 		SDL_FreeSurface(folderbgbmp);
 		folderbgbmp = NULL;
 	}
+	// Drop at once. A fade here would play under whatever screen asked for the clear (the Grid, a game launch).
+	folderBgFadeStop();
+	folderbg_shown_gen = 0;
 	SDL_AtomicSet(&folderbgchanged, 1);
 	setNeedDraw(1);
 	SDL_UnlockMutex(bgMutex);
@@ -787,7 +819,7 @@ void requestBackgroundReupload(void) {
 }
 
 bool backgroundLayerPending(void) {
-	return SDL_AtomicGet(&folderbgchanged) || SDL_AtomicGet(&thumbchanged);
+	return SDL_AtomicGet(&folderbgchanged) || SDL_AtomicGet(&thumbchanged) || folderbg_fading;
 }
 
 // LAYER_BACKGROUND's serial right after this file's last upload: a different one means another screen (the Game
@@ -854,7 +886,74 @@ static bool artStep(void) {
 	return true;
 }
 
-void updateBackgroundLayer(SDL_Surface* blackBG) {
+// Screen-sized render targets for the crossfade. False when they can't be made (the caller snaps instead).
+static bool folderBgFadeTargets(int w, int h) {
+	if (folderbg_comp && folderbg_from_tex && folderbg_tex_w == w && folderbg_tex_h == h)
+		return true;
+	PLAT_freeTexture(folderbg_comp);
+	PLAT_freeTexture(folderbg_from_tex);
+	folderbg_comp = PLAT_targetCreate(w, h);
+	folderbg_from_tex = PLAT_targetCreate(w, h);
+	folderbg_tex_w = w;
+	folderbg_tex_h = h;
+	if (folderbg_comp && folderbg_from_tex)
+		return true;
+	PLAT_freeTexture(folderbg_comp);
+	PLAT_freeTexture(folderbg_from_tex);
+	folderbg_comp = folderbg_from_tex = NULL;
+	return false;
+}
+
+// Ease the layer from what's on it now to want (NULL: black). True when the layer was drawn.
+// A move that lands mid-fade snapshots the blend and eases toward the new picture from there.
+static bool folderBgCrossfade(unsigned want_gen, SDL_Surface* want) {
+	int w = screen->w, h = screen->h;
+	if (w <= 0 || h <= 0 || !folderBgFadeTargets(w, h))
+		return false;
+
+	bool retarget = !folderbg_fading || want_gen != folderbg_fade_gen;
+	if (retarget) {
+		PLAT_copyLayerTo(LAYER_BACKGROUND, folderbg_from_tex);
+		PLAT_freeTexture(folderbg_to_tex);
+		folderbg_to_tex = want ? PLAT_textureFromSurface(want) : NULL;
+		if (want && !folderbg_to_tex)
+			return false;
+		folderbg_fading = true;
+		folderbg_fade_gen = want_gen;
+		folderbg_fade_start = folderbg_fade_seen = SDL_GetTicks();
+	}
+
+	uint32_t now = SDL_GetTicks();
+	// Frames skipped while a full upload was deferred must not finish the ease off-screen.
+	if (!retarget && folderbg_fade_seen && now - folderbg_fade_seen > 48)
+		folderbg_fade_start += now - folderbg_fade_seen;
+	folderbg_fade_seen = now;
+	float t = now - folderbg_fade_start >= FOLDER_BG_FADE_MS
+				  ? 1.f
+				  : (float)(now - folderbg_fade_start) / (float)FOLDER_BG_FADE_MS;
+	float e = t >= 1.f ? 1.f : UI_easeStandard(t);
+	Uint8 a = (Uint8)(e * 255.f + 0.5f);
+
+	SDL_Rect full = {0, 0, w, h};
+	PLAT_targetBegin(folderbg_comp);
+	if (want) {
+		PLAT_targetDraw(folderbg_from_tex, &full, 255);
+		PLAT_targetDraw(folderbg_to_tex, &full, a);
+	} else {
+		PLAT_targetDraw(folderbg_from_tex, &full, (Uint8)(255 - a));
+	}
+	PLAT_targetEnd();
+	PLAT_drawTextureOnLayer(folderbg_comp, &full, LAYER_BACKGROUND);
+
+	if (t >= 1.f) {
+		folderbg_shown_gen = want_gen;
+		folderBgFadeStop();
+	}
+	setNeedDraw(1);
+	return true;
+}
+
+void updateBackgroundLayer(SDL_Surface* blackBG, bool defer_upload) {
 	SDL_LockMutex(bgMutex);
 	// The background layer holds black and the folder background; the game art is a GPU texture blended over it as
 	// part of the layer (PLAT_setLayerArt: it goes whenever anything else clears or draws on the layer). A changed
@@ -863,15 +962,48 @@ void updateBackgroundLayer(SDL_Surface* blackBG) {
 	// holds thumbMutex alone, so this cannot deadlock.
 	SDL_LockMutex(thumbMutex);
 	// taken (and cleared) up front: a request made while this rebuild runs is kept for the next one
-	bool rebuild = SDL_AtomicSet(&folderbgchanged, 0) || !bg_layer_known ||
-				   PLAT_layerSerial(LAYER_BACKGROUND) != bg_layer_serial;
+	bool changed = SDL_AtomicSet(&folderbgchanged, 0);
+	bool serial_dirty = !bg_layer_known || PLAT_layerSerial(LAYER_BACKGROUND) != bg_layer_serial;
+	bool rebuild = changed || serial_dirty;
 	/* Keep the current rendered layer during an asynchronous bg load. */
 	if (folderBgLoading)
 		rebuild = false;
-	if (rebuild) {
-		GFX_drawOnLayer(blackBG, 0, 0, screen->w, screen->h, 1.0f, 0, LAYER_BACKGROUND);
-		if (folderBgVisible && folderbgbmp)
-			GFX_drawOnLayer(folderbgbmp, 0, 0, screen->w, screen->h, 1.0f, 0, LAYER_BACKGROUND);
+
+	unsigned want_gen = (folderBgVisible && folderbgbmp) ? folderbg_gen : 0;
+	bool gen_mismatch = want_gen != (folderbg_fading ? folderbg_fade_gen : folderbg_shown_gen);
+	// The layer still holds the picture we uploaded. Anything else drawn since (the Game Switcher, a cleared layer)
+	// is snapped back, not faded from.
+	bool own_layer = bg_layer_known && !serial_dirty;
+	bool fade = CFG_getMenuAnimations() && (folderbg_fading || (gen_mismatch && own_layer && !folderBgLoading));
+	// Animations switched off mid-fade: cut to the picture now, and don't leave the fade flag set.
+	if (!CFG_getMenuAnimations() && folderbg_fading) {
+		fade = false;
+		folderBgFadeStop();
+		if (!folderBgLoading)
+			rebuild = true;
+	}
+
+	bool drew = false;
+	if (fade) {
+		drew = folderBgCrossfade(want_gen, want_gen ? folderbgbmp : NULL);
+		if (!drew)
+			fade = false;
+	}
+	if (!drew && rebuild) {
+		if (defer_upload) {
+			// The full upload waits out the glide. The request stays latched.
+			if (changed || serial_dirty)
+				SDL_AtomicSet(&folderbgchanged, 1);
+		} else {
+			GFX_drawOnLayer(blackBG, 0, 0, screen->w, screen->h, 1.0f, 0, LAYER_BACKGROUND);
+			if (folderBgVisible && folderbgbmp)
+				GFX_drawOnLayer(folderbgbmp, 0, 0, screen->w, screen->h, 1.0f, 0, LAYER_BACKGROUND);
+			folderBgFadeStop();
+			folderbg_shown_gen = want_gen;
+			drew = true;
+		}
+	}
+	if (drew) {
 		bg_layer_serial = PLAT_layerSerial(LAYER_BACKGROUND);
 		bg_layer_known = true;
 		// the redraw dropped the art: the shown one goes back over the new layer, even while a newer one is still
@@ -882,7 +1014,8 @@ void updateBackgroundLayer(SDL_Surface* blackBG) {
 			PLAT_setLayerArt(art_tex[art_front], &dst);
 		}
 	}
-	if (artStep())
+	// A deferred glide skips the art's band upload too, unless this frame already redrew the layer under it.
+	if ((!defer_upload || drew) && artStep())
 		SDL_AtomicSet(&thumbchanged, 0);
 	SDL_UnlockMutex(thumbMutex);
 	SDL_UnlockMutex(bgMutex);
@@ -949,6 +1082,10 @@ void cleanupImageLoaderPool(void) {
 		art_tex[i] = NULL;
 	}
 	art_front = -1;
+	folderBgFadeStop();
+	PLAT_freeTexture(folderbg_comp);
+	PLAT_freeTexture(folderbg_from_tex);
+	folderbg_comp = folderbg_from_tex = NULL;
 	// Signal all worker threads to exit (atomic set for thread safety)
 	SDL_AtomicSet(&workerThreadsShutdown, 1);
 

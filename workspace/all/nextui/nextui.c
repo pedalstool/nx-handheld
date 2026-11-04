@@ -672,17 +672,13 @@ int main(int argc, char* argv[]) {
 				SDL_FreeSurface(menuBarSurface);
 
 			if (lastScreen == SCREEN_GAMELIST) {
-				// Both GPU-layer uploads are deferred while the selection pill
-				// is gliding: a full-screen layer upload costs ~25ms in one
-				// frame — a visible mid-glide hitch. folderbgchanged /
-				// thumbchanged stay latched, so the new background/thumbnail
-				// lands on the first frame after the glide settles (via the
-				// idle thumbchanged branch below). The Consoles carousel's background
-				// (Layouts > Consoles background: Background) waits out the row's slide the same way.
-				if (!GameList_pillAnimating() &&
-					!(RowView_consoleBackground() && RowView_animating())) {
-					updateBackgroundLayer(blackBG);
-				}
+				// A full-screen layer upload costs ~25ms in one frame, a visible hitch mid-glide, so that
+				// reupload waits out the selection pill and the Consoles carousel's slide. The console
+				// background's crossfade still runs during the move (one upload of the incoming picture,
+				// then a GPU blend).
+				bool row_moving = GameList_pillAnimating() ||
+								  (RowView_consoleBackground() && RowView_animating());
+				updateBackgroundLayer(blackBG, row_moving);
 
 				GFX_clearLayers(LAYER_TRANSITION);
 				if (!GameList_scrollIsScrolling())
@@ -757,7 +753,7 @@ int main(int argc, char* argv[]) {
 			dirty = false;
 		} else if (backgroundLayerPending() ||
 				   (GameList_scrollBusy() && !ContextMenu_isOpen())) {
-			updateBackgroundLayer(blackBG);
+			updateBackgroundLayer(blackBG, false);
 			// Same flash as the dirty pass (see gamelist.c / 81a0c40a): the idle
 			// marquee tick presents the screen itself (ScrollText_animateOnly ->
 			// GFX_scrollTextTexture -> PLAT_GPU_Flip), which would blink the
