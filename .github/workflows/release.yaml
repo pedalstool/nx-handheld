@@ -234,18 +234,6 @@ jobs:
         # rate-limited (see settings_updater.c / updater_url.c).
         run: make package BUILD_TAG=${{ needs.prepare.outputs.next-tag }} RELEASE_NAME=NXRedux-${{ needs.prepare.outputs.next-tag }}
 
-      # NOTE: do NOT ship a "changed files only" MinUI.zip as -brick.zip.
-      # boot.sh rm -rf's .system/bin, lib, and paks before unzip; a partial
-      # MinUI.zip leaves the card unbootable (poweroff loop). OTA must be a
-      # complete package. Keep an identical -brick-full.zip for SD installs.
-      - name: Alias full package for OTA + SD install
-        env:
-          NEXT_TAG: ${{ needs.prepare.outputs.next-tag }}
-        run: |
-          set -eu
-          FULL="releases/NXRedux-${NEXT_TAG}-brick.zip"
-          cp -f "$FULL" "releases/NXRedux-${NEXT_TAG}-brick-full.zip"
-
       - name: Upload Artifacts
         uses: actions/upload-artifact@v6.0.0
         with:

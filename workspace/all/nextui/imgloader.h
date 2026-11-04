@@ -39,6 +39,9 @@ void cleanupImageLoaderPool(void);
 void startLoadFolderBackground(const char* imagePath, BackgroundLoadedCallback callback);
 void onBackgroundLoaded(SDL_Surface* surface, const char* imagePath);
 void clearFolderBackground(void);
+// Decode `imagePath` into the folder-bg cache while idle (neighbor consoles). No-op if
+// cached, already selected, a display load is in flight, or the queue is busy.
+void folderBgPrefetch(const char* imagePath);
 
 // Thumbnail loading. `compose` (THUMB_COMPOSE_*) is how the List shows the picture: the screenshot's faded
 // background (ArtBg_compose, at half size) or the hard-edged fitted box at full size (ArtBg_composeFit, Layouts >

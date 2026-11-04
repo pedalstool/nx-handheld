@@ -368,6 +368,23 @@ static void resolveAndLoadBackground(Entry* entry, const char* rompath, const ch
 	}
 }
 
+// Warm the folder-bg cache for the rows next to the selection (Consoles / Collections).
+static void prefetchNeighborFolderBgs(MenuTabId tab, int selected) {
+	if (!top || !top->entries || (tab != MENU_TAB_CONSOLES && tab != MENU_TAB_COLLECTIONS))
+		return;
+	int art = CFG_getMenuControllerArt() ? 1 : 0;
+	TabBgKind kind = tab == MENU_TAB_CONSOLES ? TABBG_CONSOLES : TABBG_COLLECTIONS;
+	for (int step = -1; step <= 1; step += 2) {
+		int i = selected + step;
+		if (i < 0 || i >= top->entries->count)
+			continue;
+		Entry* e = top->entries->items[i];
+		char bg[1024];
+		if (e && TabBg_path(kind, e->path, art, tabBgExists, bg, sizeof(bg)))
+			folderBgPrefetch(bg);
+	}
+}
+
 static bool tabBgExists(const char* path) {
 	return exists((char*)path);
 }
@@ -1660,6 +1677,9 @@ void GameList_runContextAction(int id) {
 	case 1: // Refresh Roms (root)
 		ctxRefresh(root_sel);
 		break;
+	case 6: // Power Off (MENU context menu)
+		PWR_powerOff(0);
+		break;
 	case 2: // Tools (root, offered while the Tools tab is hidden)
 	case 4: // Consoles (same, Consoles tab)
 	case 5: // Collections (same, Collections tab)
@@ -1855,14 +1875,15 @@ static void rootItems(ContextMenuItem* items, int* idx) {
 	// Settings.pak lives inside Tools, so hiding Tools would otherwise lock the user out of re-enabling it.
 	// A visible tab is one R1 away, so its item is left out. Pushed only over a tab (the root), never over a
 	// hidden tab's list already pushed.
-	if (stack && stack->count > 1)
-		return;
-	if (MenuTabs_pushable(MENU_TAB_CONSOLES))
-		addItem(items, idx, "Consoles", 4);
-	if (MenuTabs_pushable(MENU_TAB_COLLECTIONS))
-		addItem(items, idx, "Collections", 5);
-	if (MenuTabs_pushable(MENU_TAB_TOOLS))
-		addItem(items, idx, "Tools", 2);
+	if (!stack || stack->count <= 1) {
+		if (MenuTabs_pushable(MENU_TAB_CONSOLES))
+			addItem(items, idx, "Consoles", 4);
+		if (MenuTabs_pushable(MENU_TAB_COLLECTIONS))
+			addItem(items, idx, "Collections", 5);
+		if (MenuTabs_pushable(MENU_TAB_TOOLS))
+			addItem(items, idx, "Tools", 2);
+	}
+	addItem(items, idx, "Power Off", 6);
 }
 
 void GameList_openContextMenuFor(Entry* entry, bool is_pin, bool is_continue) {
@@ -2600,6 +2621,7 @@ static void clearArtForGrid(SDL_Surface* screen, int lastScreen) {
 		Entry* entry = top->selected >= 0 && top->selected < n ? top->entries->items[top->selected] : NULL;
 		bool names = true;
 		resolveAndLoadBackground(NULL, NULL, tabBackground(MENU_TAB_CONSOLES, entry), &names);
+		prefetchNeighborFolderBgs(MENU_TAB_CONSOLES, top->selected);
 	} else {
 		clearBackground();
 	}
@@ -2731,9 +2753,12 @@ void GameList_render(SDL_Surface* screen, int lastScreen,
 	// background instead when the card has one (tabBackground).
 	if (plain)
 		clearBackground();
-	else
+	else {
 		resolveAndLoadBackground(at_root ? NULL : entry, rompath, at_root ? tabBackground(tab, entry) : NULL,
 								 &list_show_entry_names);
+		if (at_root)
+			prefetchNeighborFolderBgs(tab, list->selected);
+	}
 
 	// load game thumbnails
 	if (!game_art) {
