@@ -279,13 +279,18 @@ killall -9 show2.elf > /dev/null 2>&1
 
 EXEC_PATH="/tmp/nextui_exec"
 NEXT_PATH="/tmp/next"
-touch "$EXEC_PATH"  && sync
+touch "$EXEC_PATH"
 while [ -f $EXEC_PATH ]; do
 	nx_update_logs_path
 	# Save Sync listens for the Thor while the menu is up. It backgrounds itself.
+	# Skip the exec when that process is already alive.
 	SAVESYNC="$SYSTEM_PATH/paks/Tools/Save Sync.pak/savesync.elf"
 	if [ -x "$SAVESYNC" ]; then
-		"$SAVESYNC" serve
+		savesync_pid=""
+		[ -f /tmp/savesync.pid ] && savesync_pid=$(cat /tmp/savesync.pid 2>/dev/null)
+		if [ -z "$savesync_pid" ] || ! kill -0 "$savesync_pid" 2>/dev/null; then
+			"$SAVESYNC" serve
+		fi
 	fi
 	nextui.elf &> "$LOGS_PATH/nextui.txt"
 

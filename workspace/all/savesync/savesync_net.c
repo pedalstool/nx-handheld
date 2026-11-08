@@ -29,7 +29,7 @@ static int set_timeouts(int fd, int seconds) {
 	return 0;
 }
 
-static int connect_host(const char* host, int port) {
+static int connect_host_ms(const char* host, int port, int timeout_ms) {
 	int fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (fd < 0)
 		return -1;
@@ -55,8 +55,10 @@ static int connect_host(const char* host, int port) {
 	FD_ZERO(&wset);
 	FD_SET(fd, &wset);
 	struct timeval tv;
-	tv.tv_sec = 2;
-	tv.tv_usec = 0;
+	if (timeout_ms < 1)
+		timeout_ms = 1;
+	tv.tv_sec = timeout_ms / 1000;
+	tv.tv_usec = (timeout_ms % 1000) * 1000;
 	rc = select(fd + 1, NULL, &wset, NULL, &tv);
 	if (rc <= 0) {
 		close(fd);
@@ -74,6 +76,18 @@ static int connect_host(const char* host, int port) {
 	}
 	set_timeouts(fd, 8);
 	return fd;
+}
+
+static int connect_host(const char* host, int port) {
+	return connect_host_ms(host, port, 2000);
+}
+
+int savesync_reachable(const char* host, int port) {
+	int fd = connect_host_ms(host, port, 400);
+	if (fd < 0)
+		return 0;
+	close(fd);
+	return 1;
 }
 
 static int write_all(int fd, const void* data, size_t n) {

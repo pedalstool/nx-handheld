@@ -67,6 +67,8 @@ int main(void) {
 
 	assert(savesync_cart_key("GBA/Golden Sun (USA, Europe).sav", dec, sizeof(dec)));
 	assert(strcmp(dec, "GBA/Golden Sun (USA, Europe)") == 0);
+	assert(savesync_cart_key("gba/Golden Sun (USA, Europe).SAV", dec, sizeof(dec)));
+	assert(strcmp(dec, "GBA/Golden Sun (USA, Europe)") == 0);
 	assert(savesync_cart_key("GBA/Golden Sun (USA, Europe).srm", dec, sizeof(dec)));
 	assert(strcmp(dec, "GBA/Golden Sun (USA, Europe)") == 0);
 	assert(savesync_cart_key("GBA/Golden Sun (USA, Europe).gba.sav", dec, sizeof(dec)));

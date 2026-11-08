@@ -189,13 +189,20 @@ bool savesync_cart_key(const char* rel, char* out, size_t cap) {
 	size_t n = strlen(rel);
 	if (n + 1 > cap)
 		return false;
-	int sav = n > 4 && strcmp(rel + n - 4, ".sav") == 0;
-	int srm = n > 4 && strcmp(rel + n - 4, ".srm") == 0;
+	int sav = ends_ci(rel, ".sav");
+	int srm = ends_ci(rel, ".srm");
 	if (!sav && !srm)
 		return false;
 	n -= 4;
 	memcpy(out, rel, n);
 	out[n] = '\0';
+	// GBA/Game.sav and gba/Game.srm are one cart. The folder is the console tag.
+	char* folder = strchr(out, '/');
+	size_t seg = folder ? (size_t)(folder - out) : 0;
+	for (size_t i = 0; i < seg; i++) {
+		if (out[i] >= 'a' && out[i] <= 'z')
+			out[i] = (char)(out[i] - 'a' + 'A');
+	}
 	// MinUI keeps the rom extension: "Golden Sun.gba.sav" is the same cart as
 	// "Golden Sun.sav".
 	if (sav) {
@@ -225,8 +232,8 @@ int savesync_cart_prefer(const char* path_a, long size_a, long mtime_a, const ch
 		return b_empty ? 1 : 0;
 	if (mtime_a != mtime_b)
 		return mtime_a > mtime_b ? 1 : 0;
-	int a_sav = path_a && strlen(path_a) >= 4 && strcmp(path_a + strlen(path_a) - 4, ".sav") == 0;
-	int b_sav = path_b && strlen(path_b) >= 4 && strcmp(path_b + strlen(path_b) - 4, ".sav") == 0;
+	int a_sav = path_a && ends_ci(path_a, ".sav");
+	int b_sav = path_b && ends_ci(path_b, ".sav");
 	if (a_sav != b_sav)
 		return a_sav ? 1 : 0;
 	return 0;

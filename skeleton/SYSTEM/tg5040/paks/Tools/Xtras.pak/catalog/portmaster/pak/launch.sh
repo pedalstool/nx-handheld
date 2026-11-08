@@ -41,6 +41,8 @@ echo "$0 $*"
 PM_DIR="$SDCARD_PATH/Emus/shared/PortMaster"
 PM_FILES="$PM_DIR/files"
 PORTS_ROM_DIR="$SDCARD_PATH/Roms/Ports (PORTS)"
+ports_stamp() { ls -1 "$PORTS_ROM_DIR" 2>/dev/null; }
+PORTS_BEFORE=$(ports_stamp)
 XTRAS_STATE_DIR="$SHARED_USERDATA_PATH/xtras"
 PY="$PM_DIR/bin/python3"
 # PortMaster 2026.10.18+ keeps the platform code in the harbourmaster/platform/
@@ -602,5 +604,8 @@ fix_port_scripts
 create_busybox_wrappers
 alias_gles1
 sync_port_artwork
-rm -f "$USERDATA_PATH/emulist_cache.txt" "$USERDATA_PATH/romindex_cache.txt"
+# A full ROM rescan is only needed when a port was added or removed.
+if [ "$PORTS_BEFORE" != "$(ports_stamp)" ]; then
+	rm -f "$USERDATA_PATH/emulist_cache.txt" "$USERDATA_PATH/romindex_cache.txt"
+fi
 exit 0

@@ -10,6 +10,7 @@
 #define SAVESYNC_PORT 27790
 
 int savesync_serve(const char* root, int port);
+int savesync_reachable(const char* host, int port);
 int savesync_fetch_index(const char* host, int port, SavesyncIndex* out);
 int savesync_download(const char* host, int port, const char* rel, unsigned char** data, long* size, long* mtime);
 int savesync_upload(const char* host, int port, const char* rel, const unsigned char* data, long size, long mtime);

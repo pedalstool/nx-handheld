@@ -265,6 +265,15 @@ static int reconcile(const char* root, const char* peer, int do_pull, int do_pus
 	memset(&remote, 0, sizeof(remote));
 	memset(&base, 0, sizeof(base));
 	int have_base = 0;
+	// A Thor that is off used to wait out a full Saves walk and then a 2 s
+	// connect. The walk can wait until we know the peer answers.
+	if (!savesync_reachable(peer, SAVESYNC_PORT)) {
+		if (do_pull)
+			write_began(1);
+		snprintf(status, status_cap, "THOR UNREACHABLE");
+		write_status(status);
+		return -1;
+	}
 	if (savesync_scan(root, &local) != 0) {
 		snprintf(status, status_cap, "CANNOT READ SAVES");
 		write_status(status);
