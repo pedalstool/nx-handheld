@@ -15,7 +15,7 @@
 #define KEY_BACK 158
 #endif
 
-// 5x7 glyphs, bit 0 on the left. Enough for the setup screen.
+// 5x7 glyphs, the high bit of each row on the left. Enough for the setup screen.
 static const unsigned char* glyph(char c) {
 	static const unsigned char g[][7] = {
 		[' '] = {0, 0, 0, 0, 0, 0, 0},
@@ -145,7 +145,7 @@ static void text(struct Fb* fb, int x, int y, const char* s, int r, int g, int b
 		const unsigned char* rows = glyph(s[i]);
 		for (int row = 0; row < 7; row++) {
 			for (int col = 0; col < 5; col++) {
-				if ((rows[row] >> col) & 1) {
+				if ((rows[row] >> (4 - col)) & 1) { // bit 4 is the left column
 					for (int sy = 0; sy < scale; sy++)
 						for (int sx = 0; sx < scale; sx++)
 							putpx(fb, x + col * scale + sx, y + row * scale + sy, r, g, b);
