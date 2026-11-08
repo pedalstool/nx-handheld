@@ -130,6 +130,9 @@ system:
 	cp ./workspace/all/minarch/build/$(PLATFORM)/minarch.elf ./build/SYSTEM/$(PLATFORM)/bin/
 	cp ./workspace/all/nextval/build/$(PLATFORM)/nextval.elf ./build/SYSTEM/$(PLATFORM)/bin/
 	cp ./workspace/all/settings/build/$(PLATFORM)/settings.elf ./build/SYSTEM/$(PLATFORM)/paks/Tools/Settings.pak/
+ifeq ($(PLATFORM), tg5040)
+	cp ./workspace/all/savesync/build/$(PLATFORM)/savesync.elf ./build/SYSTEM/$(PLATFORM)/paks/Tools/Save\ Sync.pak/
+endif
 	cp ./workspace/all/scraper/build/$(PLATFORM)/scraper.elf ./build/SYSTEM/$(PLATFORM)/paks/Tools/Artwork\ Manager.pak/
 ifeq ($(PLATFORM), tg5040)
 	# Fast shutdown (and limbo fix on tg5040)

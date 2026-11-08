@@ -282,6 +282,11 @@ NEXT_PATH="/tmp/next"
 touch "$EXEC_PATH"  && sync
 while [ -f $EXEC_PATH ]; do
 	nx_update_logs_path
+	# Save Sync listens for the Thor while the menu is up. It backgrounds itself.
+	SAVESYNC="$SYSTEM_PATH/paks/Tools/Save Sync.pak/savesync.elf"
+	if [ -x "$SAVESYNC" ]; then
+		"$SAVESYNC" serve
+	fi
 	nextui.elf &> "$LOGS_PATH/nextui.txt"
 
 	if [ -f $NEXT_PATH ]; then
@@ -294,7 +299,23 @@ while [ -f $EXEC_PATH ]; do
 		echo schedutil > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null
 		echo 408000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq 2>/dev/null
 		echo 1008000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 2>/dev/null
-		eval "$CMD"
+		# Before a game, take a newer save from the Thor. After it, send one
+		# back. A Thor that is off must not block the launch (pull exits 0).
+		SAVESYNC="$SYSTEM_PATH/paks/Tools/Save Sync.pak/savesync.elf"
+		case "$CMD" in
+		*minarch.elf*)
+			if [ -x "$SAVESYNC" ]; then
+				"$SAVESYNC" pull
+				eval "$CMD"
+				"$SAVESYNC" push
+			else
+				eval "$CMD"
+			fi
+			;;
+		*)
+			eval "$CMD"
+			;;
+		esac
 		rm -f $NEXT_PATH
 		# Restore CPU state (games/tools may change governor and freq)
 		echo schedutil > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null

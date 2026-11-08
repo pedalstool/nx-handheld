@@ -41,6 +41,7 @@ endif
 	# native PICO-8: bridge core + LD_PRELOAD shim + the child's SDL2 (after minarch: needs its libretro-common)
 	cd ./all/pico8native/ && make
 ifeq ($(PLATFORM), tg5040)
+	cd ./all/savesync/ && make
 	cd ./all/netplay-wizard/ && make
 	cd ./all/usblink/ && make
 	cd ./all/emu-options/ && make
@@ -89,6 +90,7 @@ endif
 	cd ./all/ratools/ && make clean
 	cd ./all/audiomon/ && make clean
 	cd ./all/pico8native/ && make clean
+	cd ./all/savesync/ && make clean
 	cd ./all/netplay-wizard/ && make clean
 	cd ./all/usblink/ && make clean
 	cd ./all/emu-options/ && make clean
