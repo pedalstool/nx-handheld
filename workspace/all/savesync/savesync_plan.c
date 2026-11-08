@@ -44,6 +44,29 @@ bool savesync_allow_upload(bool offline_begin, long base_mtime, long remote_mtim
 	return true;
 }
 
+static int ends_ci(const char* s, const char* suf) {
+	size_t n = strlen(s);
+	size_t m = strlen(suf);
+	if (n <= m)
+		return 0;
+	for (size_t i = 0; i < m; i++) {
+		char a = s[n - m + i];
+		if (a >= 'A' && a <= 'Z')
+			a = (char)(a - 'A' + 'a');
+		if (a != suf[i])
+			return 0;
+	}
+	return 1;
+}
+
+bool savesync_is_save(const char* rel) {
+	if (!rel || !rel[0])
+		return false;
+	const char* base = strrchr(rel, '/');
+	base = base ? base + 1 : rel;
+	return ends_ci(base, ".sav") || ends_ci(base, ".srm") || ends_ci(base, ".rtc");
+}
+
 bool savesync_path_ok(const char* rel) {
 	if (!rel || !rel[0] || rel[0] == '/')
 		return false;

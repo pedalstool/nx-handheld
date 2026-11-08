@@ -27,6 +27,10 @@ bool savesync_allow_upload(bool offline_begin, long base_mtime, long remote_mtim
 // Relative save path: no absolute path, no "..", no empty segment.
 bool savesync_path_ok(const char* rel);
 
+// Cart SRAM (.sav, including MinUI name.gba.sav), RetroArch .srm, or the
+// clock file .rtc. A ROM such as .gba is not a save.
+bool savesync_is_save(const char* rel);
+
 // Percent-encode for the query string. '/' is left as the separator.
 // Returns bytes written excluding the NUL, or -1 if it does not fit.
 int savesync_encode_path(const char* rel, char* out, size_t cap);

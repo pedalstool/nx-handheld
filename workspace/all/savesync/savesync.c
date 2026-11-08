@@ -171,7 +171,7 @@ static void apply_transfers(const char* root, const char* peer, const SavesyncIn
 	if (want_push) {
 	for (int i = 0; i < local->count; i++) {
 		const SavesyncEntry* e = &local->items[i];
-		if (best_cart(local, e->path) != e)
+		if (!savesync_is_save(e->path) || best_cart(local, e->path) != e)
 			continue;
 		const SavesyncEntry* r = best_cart(remote, e->path);
 		long rsize = r ? r->size : -1;
@@ -208,7 +208,7 @@ static void apply_transfers(const char* root, const char* peer, const SavesyncIn
 	if (want_pull) {
 	for (int i = 0; i < remote->count; i++) {
 		const SavesyncEntry* e = &remote->items[i];
-		if (best_cart(remote, e->path) != e)
+		if (!savesync_is_save(e->path) || best_cart(remote, e->path) != e)
 			continue;
 		const SavesyncEntry* loc = best_cart(local, e->path);
 		long lsize = loc ? loc->size : -1;

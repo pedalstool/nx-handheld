@@ -25,6 +25,14 @@ int main(void) {
 	assert(!savesync_allow_upload(true, -1, 150));	// we had no file, peer does
 	assert(savesync_allow_upload(true, 100, -1));	// peer has nothing
 
+	assert(savesync_is_save("GBA/Golden Sun (USA, Europe).sav"));
+	assert(savesync_is_save("GBA/Golden Sun (USA, Europe).gba.sav"));
+	assert(savesync_is_save("GBA/Golden Sun.srm"));
+	assert(savesync_is_save("GBA/Pokemon.rtc"));
+	assert(!savesync_is_save("GBA/Golden Sun (USA, Europe).gba"));
+	assert(!savesync_is_save("GBA/Golden Sun.gba"));
+	assert(!savesync_is_save("Golden Sun.zip"));
+
 	assert(savesync_path_ok("GB/Tetris.srm"));
 	assert(savesync_path_ok("GBA/Pokemon - Emerald.srm"));
 	assert(!savesync_path_ok(""));

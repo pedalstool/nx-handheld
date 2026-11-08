@@ -112,7 +112,7 @@ static int scan_dir(const char* root, const char* rel, SavesyncIndex* out) {
 			}
 			continue;
 		}
-		if (!S_ISREG(st.st_mode))
+		if (!S_ISREG(st.st_mode) || !savesync_is_save(child))
 			continue;
 		if (index_add(out, child, (long)st.st_mtime, (long)st.st_size) != 0) {
 			rc = -1;
@@ -189,7 +189,7 @@ static int full_path(const char* root, const char* rel, char* out, size_t cap) {
 
 int savesync_read_file(const char* root, const char* rel, unsigned char** out, long* size, long* mtime_out) {
 	char path[512];
-	if (full_path(root, rel, path, sizeof(path)) != 0)
+	if (!savesync_is_save(rel) || full_path(root, rel, path, sizeof(path)) != 0)
 		return -1;
 	struct stat st;
 	if (lstat(path, &st) != 0 || !S_ISREG(st.st_mode))
@@ -234,7 +234,7 @@ static int mkdir_parents(const char* file_path) {
 }
 
 int savesync_write_file(const char* root, const char* rel, const unsigned char* data, long size, long mtime) {
-	if (!data || size < 0 || size > SAVESYNC_MAX_FILE)
+	if (!savesync_is_save(rel) || !data || size < 0 || size > SAVESYNC_MAX_FILE)
 		return -1;
 	char path[512];
 	if (full_path(root, rel, path, sizeof(path)) != 0)

@@ -9,7 +9,7 @@ Brick / Brick Hammer fork of [NX Redux](https://github.com/nx-redux/nx-handheld)
 - **No screenshots or screen recording**
 - **No Device Sync** — the tool that copies saves, ROMs, and BIOS between devices is not included
 - **No game count under console logos**
-- **Save sync** — the Brick and a Thor share saves. The newer file wins. `Golden Sun.sav` and `Golden Sun.srm` are the same cart save, and the bytes are written onto the `.sav` the game loads. Tools → Save Sync stores the Thor's address. The menu listens while you are in it; starting a game takes a newer save from the Thor, and leaving the game sends one back. If the Thor is off, the game still starts and that save is held until you sync on purpose
+- **Save sync** — the Brick and a Thor share saves. The newer file wins. `Golden Sun.sav` and `Golden Sun.srm` are the same cart save, and the bytes are written onto the `.sav` the game loads. ROM files such as `.gba` are left where they are. Tools → Save Sync stores the Thor's address. The menu listens while you are in it; starting a game takes a newer save from the Thor, and leaving the game sends one back. If the Thor is off, the game still starts and that save is held until you sync on purpose
 - **Console text color** — Settings includes console title / text color (from console-text-color v6)
 - **Faster console backgrounds** — screen-sized backgrounds are cached and shared (no copy on revisit); neighboring consoles prefetch while idle so browsing the Consoles list stays responsive. Returning to a console draws that background again
 - **Console transitions** — cycling through systems eases the full-screen background from one console into the next, in time with the selection. It follows the menu animations setting
