@@ -1409,30 +1409,6 @@ void Menu_waitScreenshotSave(void) {
 	SDL_WaitThread(screenshotsavethread, NULL);
 	screenshotsavethread = NULL;
 }
-void Menu_screenshot(void) {
-	char rom_name[MAX_PATH]; // getDisplayName/getAlias can write up to MAX_PATH
-	getDisplayName(game.alt_name, rom_name);
-	getAlias(game.path, rom_name);
-
-	time_t now = time(NULL);
-	struct tm* t = localtime(&now);
-	char buffer[100];
-	strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H-%M-%S", t);
-
-	// make sure this actually exists
-	char screenshots_dir[MAX_PATH];
-	snprintf(screenshots_dir, sizeof(screenshots_dir), "%s/Screenshots", SDCARD_PATH);
-	mkdir(screenshots_dir, 0755);
-
-	char png_path[MAX_PATH];
-	snprintf(png_path, sizeof(png_path), "%s/Screenshots/%s.%s.png", SDCARD_PATH, rom_name, buffer);
-	Menu_queueScreenshotSave(png_path);
-
-	// Show notification if enabled
-	if (CFG_getNotifyScreenshot()) {
-		Notification_push(NOTIFICATION_SETTING, "Screenshot saved", NULL);
-	}
-}
 // X on Quit skips the autosave below, so it is only offered when there is one to skip.
 static bool Menu_canAutosaveQuit(void) {
 	// Block save states during multiplayer - causes connection breaks

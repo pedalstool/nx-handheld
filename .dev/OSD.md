@@ -436,7 +436,7 @@ from the SD card directly — the overlay mount is the only way to control it.
 Every model's daemon build differs (different md5), so each lives in its own
 `device/<dev>/` layer.
 
-Activating screenshot, screen record, or power auto-hides the OSD panel
+Activating power auto-hides the OSD panel
 (`touch /tmp/hide_osdd`) so the user lands back on the app; toasts still
 render while the panel is hidden.
 Note the wifi/bt toggle scripts write the status file optimistically before the
@@ -449,20 +449,6 @@ Platform note: on **tg5050** the BT toggle powers the adapter off/on via a live
 combo chip drops WiFi throughput from ~330 KB/s to ~2 KB/s while bluetoothd
 runs. The apps tolerate losing bluetoothd mid-call via command timeouts in
 `generic_bt.c`.
-
-Capture toggles: both are PID-file driven. `toggle_screenshot` starts/stops
-`screenshot.elf` (daemon owns `/tmp/screenshot.pid`; L2+R2 together captures a
-frame — the widget shows a hint toast on enable, and the daemon toasts
-"Screenshot saved" after each capture). `toggle_screenrecord` runs one shared
-`set.sh` on all devices that starts/stops `screenrecorder.elf` (owns
-`/tmp/screenrecorder.pid`; on tg5050 it also onlines cpu2 for encoding
-headroom, tracked so it never offlines a core it didn't bring up). The
-recorder and the screenshot daemon pick their own capture source per platform
-(DRM scanout / fbdev / app-published GPU mirror); the foreground app's
-`capture_check()` in `generic_video.c` (both platforms) notices the PID files
-on rendered frames and publishes RGBA frames to the `/tmp/fb_mirror.raw` shm,
-guarded by a flock liveness protocol. Full architecture, source ladder, and
-the dirty-flag-rendering interactions: [CAPTURE.md](CAPTURE.md).
 
 ### Available Widgets
 
@@ -477,8 +463,6 @@ the dirty-flag-rendering interactions: [CAPTURE.md](CAPTURE.md).
 | `toggle_mute` | toggle | Output mute (separate `speaker_mute` flag via `osdctl`; independent of the FN switch; cleared by a volume key press and at boot). Fixed 2026-09-11 — `osdctl set` used to segfault before touching the hardware. The stock volume slider widget was dropped the same day: hardware volume keys already cover it |
 | `app_music` | app | Music widget (3x2, 412×268 ARGB canvas). Drawn by the resident `osdmusic.elf` (`workspace/all/osdmusic`), which `launch.sh` starts and which owns the widget's command FIFO and canvas. It renders the daemon's loaded snapshot (cover, title/artist, prev / play-pause / next with a white focus disc, and below it the Game/Music balance row — down/up switch rows, left/right move the balance) and reacts to the daemon's `enable` / `disable` / `key_a` / `key_b` / `up` / `down` / `left` / `right` lines (all verified to arrive while inside the widget; `disable` is what B produces). Focus colouring mirrors the daemon's own sliders: the daemon draws its focus ring while the widget is merely highlighted, and once entered (A) the active control inside — focus disc, balance knob/fill/value, placeholder hint — takes the theme's primary accent (`color2` in `minuisettings.txt`, re-read when the file changes; the classic OSD green #36FFA0 is only a fallback when the file is unreadable). The daemon's ring (`block*_sel.png`), active-slider fill (`progress_*_sel.png`) and toast frame (`bg_msg_w*.png`) are images, shipped as pure white shapes (the stock Smart Pro ring's translucent white fill was dropped so every model has a plain ring). Both launchers run `osdmusic.elf --tint-osd <src> <dst>` before starting the daemon: it recolours the slider and toast images' white/grey pixels to the accent (brightness-scaled, alpha kept, own PNG writer since SDL_image 2.0.1 has no `IMG_SavePNG`) — in place in the tg5040 tmpfs staging copy, or into `/tmp/nx_osd_tint` stacked as the top overlay layer on tg5050 so the card is never written. The ring is deliberately excluded from the tint (2026-09-19) and stays the shipped white: with a dark accent such as the default #002222 the tinted ring was nearly invisible on the dark tiles. The daemon loads these images once at startup, so an accent change reaches the slider/toast on the next boot (the widget's own controls follow immediately). Touch `/tmp/osdmusic_debug` to log every raw line to `/tmp/osdmusic_cmd.log`. While no loaded daemon snapshot is available it draws a "No music playing / Press A to open Music Player" placeholder, and A writes the Music Player pak path to `/tmp/nextui_open` (`OPEN_PAK_REQUEST_PATH`) plus `/tmp/hide_osdd`; nextui's main loop consumes that file and launches the pak in place exactly like the F1/F2 shortcuts, so nothing is killed. The request is ignored unless `nextui.elf` is the foreground app. `osdmusic.elf` is a passive daemon client and never starts or stops playback. Its `config.json` lives in the `res/<WxH>/` layer, not `common/`, because the grid cell differs: 3x2 / 412×268 on 1024×768, 4x2 / 540×260 on 1280×720; `osdmusic.elf` reads the canvas size and tile name from that file at startup. In every device layout (2026-09-11) |
 | `toggle_power` | toggle | Power off — stock ships an empty `set.sh`; ours implements the launch.sh contract (`rm /tmp/nextui_exec` + `touch /tmp/poweroff` + kill foreground app → `poweroff_next`). In-game press exits minarch without quicksave. |
-| `toggle_screenshot` | toggle | Screenshot daemon on/off (custom; L2+R2 captures to `/mnt/SDCARD/Images/Screenshots`) |
-| `toggle_screenrecord` | toggle | Screen recording on/off (custom; records to `/mnt/SDCARD/Videos/Recordings`) |
 | `static_pic_1` | static | Background/header image (not shipped — removed from the tg5040 vendored tree) |
 | `static_battery` | static | Battery level display |
 | `static_cpu_freq` | static | CPU frequency display |

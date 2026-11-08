@@ -155,8 +155,6 @@ enum {
 
 	ASSET_CHECKCIRCLE,
 	ASSET_LOCK,
-	ASSET_SCREENSHOT,
-	ASSET_RECORD,
 	ASSET_SETTINGS,
 	ASSET_STORE,
 	ASSET_GAMEPAD,
@@ -606,9 +604,6 @@ void PWR_quit(void);
 int PWR_ignoreSettingInput(int btn, IndicatorType show_setting);
 IndicatorType PWR_getShowSetting(void);
 void PWR_update(bool* dirty, IndicatorType* show_setting, PWR_callback_t before_sleep, PWR_callback_t after_sleep);
-// whether the OSD screenshot daemon (armed) / screen recorder (recording) are
-// alive, for the menu-bar indicators; cached ~500ms internally
-void PWR_captureStatus(int* screenshot_armed, int* recording);
 void PWR_updateFrequency(int secs, int updateWifi);
 
 void PWR_disablePowerOff(void);
@@ -929,9 +924,7 @@ void PWR_pinHelperThread(void);
 // No-op where there is one cluster.
 void PWR_pinBackgroundThread(void);
 void PLAT_setRumble(int strength);
-void PLAT_captureRecStop(void);
-void PLAT_pokeCapture(void); // republish a frame for the OSD capture daemons when the app is idle
-bool PLAT_isOSDShown(void);	 // the OSD panel is up (it owns the pad until it closes)
+bool PLAT_isOSDShown(void); // the OSD panel is up (it owns the pad until it closes)
 
 char* PLAT_getModel(void);
 void PLAT_getOsVersionInfo(char* output_str, size_t max_len);

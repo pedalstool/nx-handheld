@@ -32,7 +32,6 @@
 	X(TOGGLE_REWIND, "Toggle Rewind")               \
 	X(HOLD_REWIND, "Hold Rewind")                   \
 	X(GAMESWITCHER, "Game Switcher")                \
-	X(SCREENSHOT, "Screenshot")                     \
 	/* platforms with turbo (PLAT_canTurbo) only */ \
 	X(TOGGLE_TURBO_A, "Toggle Turbo A")             \
 	X(TOGGLE_TURBO_B, "Toggle Turbo B")             \

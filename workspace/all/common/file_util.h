@@ -2,8 +2,8 @@
 #define FILE_UTIL_H
 
 // Lightweight file helpers with no SDL or platform dependencies, shared by the
-// small daemons (screenshot, screenrecorder), the pure modules (emu_shortcuts,
-// emu_overlay_cfg) and utils.c (whose utils.h includes this). Header-only so
+// pure modules (emu_shortcuts, emu_overlay_cfg) and utils.c (whose utils.h
+// includes this). Header-only so
 // the ~25 binaries that link utils.c need no extra source file, and the pure
 // modules' host tests no utils.c.
 

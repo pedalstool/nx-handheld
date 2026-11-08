@@ -38,8 +38,6 @@ ifeq ($(PLATFORM), tg5040)
 endif
 	cd ./all/audiomon && make all
 	cd ./all/show2/ && make
-	cd ./all/screenshot/ && make
-	cd ./all/screenrecorder/ && make
 	# native PICO-8: bridge core + LD_PRELOAD shim + the child's SDL2 (after minarch: needs its libretro-common)
 	cd ./all/pico8native/ && make
 	cd ./all/sync/ && make
@@ -90,8 +88,6 @@ endif
 	cd ./all/nextval/ && make clean
 	cd ./all/settings/ && make clean
 	cd ./all/ratools/ && make clean
-	cd ./all/screenshot/ && make clean
-	cd ./all/screenrecorder/ && make clean
 	cd ./all/audiomon/ && make clean
 	cd ./all/pico8native/ && make clean
 	cd ./all/sync/ && make clean

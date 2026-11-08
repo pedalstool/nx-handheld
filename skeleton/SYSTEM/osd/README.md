@@ -32,10 +32,6 @@ read this first:
   platform (gpio227 on tg5040, the PWM motor at `/sys/class/motor/level` on
   tg5050). The two copies are identical but for that one path; keep them in sync.
 
-(`toggle_screenrecord` used to be a third override; the recorder is now
-unified — one common `set.sh` runs `screenrecorder.elf` everywhere and the
-daemon picks its capture source per platform. See `.dev/CAPTURE.md`.)
-
 Plus `stepper_fan_level/` — tg5050 is the only device with a fan, so that widget
 has no `common/` counterpart to override.
 
@@ -54,14 +50,8 @@ optional layer between `common` and `res`, and nothing else changes.
 All four devices use the tg5050 icon set, which marks a toggle's active state
 with a **solid white disc and a dark glyph**; the inactive state stays a faint
 translucent disc. tg5040's stock icons distinguished the two states by glyph
-alone, with no fill change, and NX Redux's own `toggle_screenrecord` icons were
-already drawn solid — so adopting the tg5050 set made the row internally
-consistent as well as clearer. The eight icons were promoted into `common/` and
-their `device/smartpros/` overrides deleted.
-
-`toggle_screenshot` remains the odd one out: its disc is fully transparent
-rather than translucent, so it reads differently from every other toggle. Left
-alone here; it needs an artwork decision, not a refactor.
+alone, with no fill change. The icons were promoted into `common/` and their
+`device/smartpros/` overrides deleted.
 
 ## Paths
 

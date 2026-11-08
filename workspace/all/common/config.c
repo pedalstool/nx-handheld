@@ -110,7 +110,6 @@ void CFG_defaults(NextUISettings* cfg) {
 
 		.notifyManualSave = CFG_DEFAULT_NOTIFY_MANUAL_SAVE,
 		.notifyLoad = CFG_DEFAULT_NOTIFY_LOAD,
-		.notifyScreenshot = CFG_DEFAULT_NOTIFY_SCREENSHOT,
 		.notifyAdjustments = CFG_DEFAULT_NOTIFY_ADJUSTMENTS,
 		.notifyDuration = CFG_DEFAULT_NOTIFY_DURATION,
 
@@ -391,10 +390,6 @@ void CFG_init(FontLoad_callback_t cb, ColorSet_callback_t ccb) {
 			}
 			if (sscanf(line, "notifyLoad=%i", &temp_value) == 1) {
 				CFG_setNotifyLoad((bool)temp_value);
-				continue;
-			}
-			if (sscanf(line, "notifyScreenshot=%i", &temp_value) == 1) {
-				CFG_setNotifyScreenshot((bool)temp_value);
 				continue;
 			}
 			if (sscanf(line, "notifyAdjustments=%i", &temp_value) == 1) {
@@ -1091,15 +1086,6 @@ void CFG_setNotifyLoad(bool enable) {
 	CFG_sync();
 }
 
-bool CFG_getNotifyScreenshot(void) {
-	return settings.notifyScreenshot;
-}
-
-void CFG_setNotifyScreenshot(bool enable) {
-	settings.notifyScreenshot = enable;
-	CFG_sync();
-}
-
 bool CFG_getNotifyAdjustments(void) {
 	return settings.notifyAdjustments;
 }
@@ -1492,7 +1478,6 @@ static int CFG_serialize(char* buf, size_t cap) {
 	EMIT("currentTimezone=%i\n", settings.currentTimezone);
 	EMIT("notifyManualSave=%i\n", settings.notifyManualSave);
 	EMIT("notifyLoad=%i\n", settings.notifyLoad);
-	EMIT("notifyScreenshot=%i\n", settings.notifyScreenshot);
 	EMIT("notifyAdjustments=%i\n", settings.notifyAdjustments);
 	EMIT("notifyDuration=%i\n", settings.notifyDuration);
 	EMIT("raEnable=%i\n", settings.raEnable);

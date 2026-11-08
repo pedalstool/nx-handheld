@@ -58,9 +58,6 @@ hats = {'up': (17, -1), 'down': (17, 1), 'left': (16, -1), 'right': (16, 1)}
 for n, (c, v) in hats.items():
     open(os.path.join(d, n + '_down'), 'wb').write(ev(3, c, v) + syn)
     open(os.path.join(d, n + '_up'), 'wb').write(ev(3, c, 0) + syn)
-# L2+R2 together (analog triggers, ABS 2/5): the screenshot daemon's capture combo
-open(os.path.join(d, 'l2r2_down'), 'wb').write(ev(3, 2, 255) + ev(3, 5, 255) + syn)
-open(os.path.join(d, 'l2r2_up'), 'wb').write(ev(3, 2, 0) + ev(3, 5, 0) + syn)
 PY
 cat > "$OUT/press.sh" <<EOS
 #!/bin/sh
@@ -77,33 +74,13 @@ adb shell 'mkdir -p /tmp/evt' && adb push -q "$OUT/evt/." /tmp/evt/ && adb push 
 press() { adb shell "/tmp/press.sh $1 ${2:-1} ${3:-150}"; }
 
 # Screenshots. tg5040 scans out fb0, so a plain fbdev grab works. tg5050 never
-# does (GL/DRM path; fb0 is black), so there the screenshot daemon is started
-# for the run and each shot is its L2+R2 capture, pulled and then deleted from
-# the user's Screenshots folder.
-SHOTS_DIR=/mnt/SDCARD/Images/Screenshots
-DAEMON_STARTED=0
+# does (GL/DRM path; fb0 is black) and has no capture helper, so shots there
+# are skipped; the pass/fail checks are the logs.
 if [ "$PLAT" = "tg5050" ]; then
-	if ! adb shell 'kill -0 $(cat /tmp/screenshot.pid 2>/dev/null) 2>/dev/null'; then
-		adb shell 'setsid sh -c /mnt/SDCARD/.system/bin/screenshot.elf </dev/null >/dev/null 2>&1 &'
-		sleep 1
-		DAEMON_STARTED=1
-	fi
-	shot() {
-		local before after f
-		# find, not ls: the device shell colorizes and columnizes ls output
-		before=$(adb shell "find $SHOTS_DIR -maxdepth 1 -type f 2>/dev/null" | tr -d '\r')
-		adb shell "/tmp/press.sh l2r2 1 300"; sleep 2
-		after=$(adb shell "find $SHOTS_DIR -maxdepth 1 -type f 2>/dev/null" | tr -d '\r')
-		f=$(comm -13 <(echo "$before" | sort) <(echo "$after" | sort) | tail -1)
-		[ -n "$f" ] || { echo "  shot: (no capture for $1)"; return 1; }
-		adb pull -q "$f" "$OUT/$1.jpg" && adb shell "rm -f '$f'" && echo "  shot: $OUT/$1.jpg"
-	}
-	stop_daemon() { [ "$DAEMON_STARTED" = 1 ] && adb shell 'kill $(cat /tmp/screenshot.pid 2>/dev/null) 2>/dev/null'; }
+	shot() { echo "  shot: skipped ($1; fb0 is black on tg5050)"; }
 else
 	shot() { adb shell "ffmpeg -loglevel error -y -f fbdev -i /dev/fb0 -frames:v 1 -c:v mjpeg -q:v 3 /tmp/e2e.jpg" && adb pull -q /tmp/e2e.jpg "$OUT/$1.jpg" && echo "  shot: $OUT/$1.jpg"; }
-	stop_daemon() { :; }
 fi
-trap stop_daemon EXIT
 wpa()   { adb shell "$WPA $*"; }
 log_len() { adb shell "wc -l < $LOG" | tr -d '\r '; }
 # wait_log <since_line> <regex> <timeout_s>: block until the log gained a matching line

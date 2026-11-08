@@ -211,7 +211,6 @@ typedef struct
 	// Notifications
 	bool notifyManualSave;
 	bool notifyLoad;
-	bool notifyScreenshot;
 	bool notifyAdjustments;
 	int notifyDuration;
 
@@ -310,7 +309,6 @@ typedef struct
 // Notification defaults
 #define CFG_DEFAULT_NOTIFY_MANUAL_SAVE true
 #define CFG_DEFAULT_NOTIFY_LOAD true
-#define CFG_DEFAULT_NOTIFY_SCREENSHOT true
 #define CFG_DEFAULT_NOTIFY_ADJUSTMENTS true
 #define CFG_DEFAULT_NOTIFY_DURATION 1
 
@@ -521,8 +519,6 @@ bool CFG_getNotifyManualSave(void);
 void CFG_setNotifyManualSave(bool enable);
 bool CFG_getNotifyLoad(void);
 void CFG_setNotifyLoad(bool enable);
-bool CFG_getNotifyScreenshot(void);
-void CFG_setNotifyScreenshot(bool enable);
 bool CFG_getNotifyAdjustments(void);
 void CFG_setNotifyAdjustments(bool enable);
 int CFG_getNotifyDuration(void);

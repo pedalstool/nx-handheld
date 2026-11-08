@@ -22,7 +22,6 @@ NetplaySavesMode Menu_netplaySavesMode(void);
 // game's auto-resume state and its markers (after Menu_init).
 void Menu_dropAutoResumeForSession(void);
 int Menu_options(MenuList* list);
-void Menu_screenshot(void);
 void Menu_saveState(void);
 const char* Menu_slotPreviewPath(void); // the current slot's screenshot, as Menu_saveState writes it
 void Menu_loadState(void);

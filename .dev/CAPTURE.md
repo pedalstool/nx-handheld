@@ -1,6 +1,11 @@
-# Screen Capture Stack (screenshot, recorder, indicators)
+# Screen Capture Stack (removed)
 
-How screenshots and screen recording work, and why they work that way. The
+Screenshot and screen recording were removed: the OSD toggles, `screenshot.elf`,
+`screenrecorder.elf`, the GPU frame mirror, and the menu-bar camera and record
+icons. Save-state previews and scraped game art are unchanged. The rest of this
+file describes the old stack and is history only.
+
+How screenshots and screen recording worked, and why they worked that way. The
 per-device display topology that forces this design is in
 [DEVICES.md](DEVICES.md) (§Display topology). OSD widget wiring is in
 [OSD.md](OSD.md).

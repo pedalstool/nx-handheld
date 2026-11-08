@@ -144,13 +144,9 @@ sleep; poke a key every ~15 s during long waits.
   wrong format — verified live 2026-08-30). Verified on
   Brick fw 1.1.1 (4.9.191), byte-identical to fb0 for plain frames; semantics
   match `disp_capture_dump_store` in any lichee linux-4.9 disp2 `dev_disp.c`
-  (e.g. CrealityTech/sonic_pad_os). Not present on tg5050 (DRM stack — use
-  [CAPTURE.md](CAPTURE.md) readback there). Adopted by `screenshot.elf` as
-  its tg5040 composite source 2026-08-30 (see [CAPTURE.md](CAPTURE.md)).
+  (e.g. CrealityTech/sonic_pad_os). Not present on tg5050 (DRM stack).
 - **tg5050**: fb0 reads black (DRM scanout — see [DEVICES.md](DEVICES.md)).
-  Use the screenshot daemon / DRM readback ([CAPTURE.md](CAPTURE.md)), or the
-  GPU mirror `/tmp/fb_mirror.raw` (1280×720 RGBA, vflipped) while a capture
-  daemon is armed.
+  There is no capture helper; use logs, or a frame the app itself writes.
 - A 11003-byte JPEG at 1280×720 is the black-frame signature.
 - App logs land at `/mnt/SDCARD/.userdata/<plat>/logs/<name>.txt` — a
   change-gated `LOG_info` at the suspect site plus this log is often faster

@@ -40,6 +40,7 @@ int main(void) {
 	for (int i = 0; i < SHORTCUT_COUNT; i++)
 		assert(shortcut_names[i] && EmuShortcuts_find(shortcut_names[i]) == i);
 	assert(EmuShortcuts_find("Toggle Turbo Z") == -1);
+	assert(EmuShortcuts_find("Screenshot") == -1); // retired; old bind lines are ignored
 
 	// labels: NONE, the 18 buttons, then MENU+ the same 18
 	assert(button_labels[SHORTCUT_LABEL_COUNT] == NULL);
@@ -81,13 +82,12 @@ int main(void) {
 					   "bind Bogus Shortcut = MENU+A\n"
 					   "bind Load State = MENU+L1\n"
 					   "bind Toggle FF = SOMETHING\n"
-					   "bind Screenshot = NONE\n"
+					   "bind Screenshot = MENU+A\n"
 					   "bind Toggle Turbo A = X",
 					   labels);
 	assert(labels[SHORTCUT_SAVE_STATE] == EmuShortcuts_labelIndex("MENU+R1"));
 	assert(labels[SHORTCUT_LOAD_STATE] == EmuShortcuts_labelIndex("MENU+L1"));
 	assert(labels[SHORTCUT_TOGGLE_FF] == 0);
-	assert(labels[SHORTCUT_SCREENSHOT] == 0);
 	assert(labels[SHORTCUT_TOGGLE_TURBO_A] == EmuShortcuts_labelIndex("X")); // last line, no newline
 	assert(labels[SHORTCUT_RESET_GAME] == 0);
 
@@ -133,11 +133,11 @@ int main(void) {
 	for (int i = 0; i < SHORTCUT_COUNT; i++)
 		assert(out[i] == global[i]);	// no overrides: the global file as is
 	over[SHORTCUT_LOAD_STATE] = menu_x; // Load State moves to Save State's button
-	over[SHORTCUT_SCREENSHOT] = EmuShortcuts_labelIndex("R2");
+	over[SHORTCUT_CYCLE_SCALE] = EmuShortcuts_labelIndex("R2");
 	EmuShortcuts_merge(global, over, out);
 	assert(out[SHORTCUT_LOAD_STATE] == menu_x);
 	assert(out[SHORTCUT_SAVE_STATE] == 0); // its global button is taken here
-	assert(out[SHORTCUT_SCREENSHOT] == over[SHORTCUT_SCREENSHOT]);
+	assert(out[SHORTCUT_CYCLE_SCALE] == over[SHORTCUT_CYCLE_SCALE]);
 	assert(out[SHORTCUT_TOGGLE_FF] == l2); // untouched global
 	over[SHORTCUT_SAVE_STATE] = menu_y;	   // swap: both overridden
 	EmuShortcuts_merge(global, over, out);

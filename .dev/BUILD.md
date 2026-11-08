@@ -79,8 +79,8 @@ docker run --rm -v $(pwd)/workspace:/root/workspace \
 
 Then push per the destination rules:
 
-- **bin/daemon binaries** (`nextui`, `minarch`, `audiomon`, `screenshot`,
-  `screenrecorder`, `options`, `netplay`, …) → `/mnt/SDCARD/.system/bin/`
+- **bin/daemon binaries** (`nextui`, `minarch`, `audiomon`, `options`,
+  `netplay`, …) → `/mnt/SDCARD/.system/bin/`
   and **need a `reboot`** to take effect.
 - **Bundled Tools paks** → `/mnt/SDCARD/.system/paks/Tools/<Name>.pak/`
   (flattened layout — no platform subdir). No reboot; just relaunch the pak.

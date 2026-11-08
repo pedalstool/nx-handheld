@@ -1274,16 +1274,6 @@ static void reset_notify_load(void) {
 	CFG_setNotifyLoad(CFG_DEFAULT_NOTIFY_LOAD);
 }
 
-static int get_notify_screenshot(void) {
-	return CFG_getNotifyScreenshot() ? 1 : 0;
-}
-static void set_notify_screenshot(int v) {
-	CFG_setNotifyScreenshot(v != 0);
-}
-static void reset_notify_screenshot(void) {
-	CFG_setNotifyScreenshot(CFG_DEFAULT_NOTIFY_SCREENSHOT);
-}
-
 static int get_notify_adjustments(void) {
 	return CFG_getNotifyAdjustments() ? 1 : 0;
 }
@@ -2385,9 +2375,6 @@ static void build_menu_tree(const DeviceInfo* dev) {
 	notify_items[idx++] = (SettingItem)ITEM_CYCLE_INIT(
 		"Load states", "Show notification when loading game state",
 		on_off_labels, 2, on_off_values, get_notify_load, set_notify_load, reset_notify_load);
-	notify_items[idx++] = (SettingItem)ITEM_CYCLE_INIT(
-		"Screenshots", "Show notification when taking a screenshot",
-		on_off_labels, 2, on_off_values, get_notify_screenshot, set_notify_screenshot, reset_notify_screenshot);
 	notify_items[idx++] = (SettingItem)ITEM_CYCLE_INIT(
 		"Vol / Display Adjustments", "Show overlay for volume, brightness, and color temp adjustments",
 		on_off_labels, 2, on_off_values, get_notify_adjustments, set_notify_adjustments, reset_notify_adjustments);

@@ -280,9 +280,6 @@ void input_poll_callback(void) {
 					if (deferred_shortcut < 0) // the first request wins (MENU+SELECT included)
 						deferred_shortcut = i; // Input_runDeferredShortcut, after core.run()
 					break;
-				case SHORTCUT_SCREENSHOT:
-					Menu_screenshot();
-					break;
 				case SHORTCUT_CYCLE_SCALE:
 					screen_scaling = (screen_scaling + 1) % Option_valueCount(&config.frontend.options[FE_OPT_SCALING]);
 					Config_syncFrontend(config.frontend.options[FE_OPT_SCALING].key, screen_scaling);
