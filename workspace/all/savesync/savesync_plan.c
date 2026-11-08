@@ -132,6 +132,55 @@ bool savesync_decode_path(const char* in, char* out, size_t cap) {
 	return savesync_path_ok(out);
 }
 
+bool savesync_cart_key(const char* rel, char* out, size_t cap) {
+	if (!rel || !out || cap < 2)
+		return false;
+	size_t n = strlen(rel);
+	if (n + 1 > cap)
+		return false;
+	int sav = n > 4 && strcmp(rel + n - 4, ".sav") == 0;
+	int srm = n > 4 && strcmp(rel + n - 4, ".srm") == 0;
+	if (!sav && !srm)
+		return false;
+	n -= 4;
+	memcpy(out, rel, n);
+	out[n] = '\0';
+	// MinUI keeps the rom extension: "Golden Sun.gba.sav" is the same cart as
+	// "Golden Sun.sav".
+	if (sav) {
+		char* slash = strrchr(out, '/');
+		char* base = slash ? slash + 1 : out;
+		char* dot = strrchr(base, '.');
+		if (dot && dot != base) {
+			const char* ext = dot + 1;
+			size_t el = strlen(ext);
+			int ok = el >= 2 && el <= 4;
+			for (size_t i = 0; ok && i < el; i++) {
+				char c = ext[i];
+				if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')))
+					ok = 0;
+			}
+			if (ok)
+				*dot = '\0';
+		}
+	}
+	return out[0] != '\0';
+}
+
+int savesync_cart_prefer(const char* path_a, long size_a, long mtime_a, const char* path_b, long size_b, long mtime_b) {
+	int a_empty = size_a <= 0;
+	int b_empty = size_b <= 0;
+	if (a_empty != b_empty)
+		return b_empty ? 1 : 0;
+	if (mtime_a != mtime_b)
+		return mtime_a > mtime_b ? 1 : 0;
+	int a_sav = path_a && strlen(path_a) >= 4 && strcmp(path_a + strlen(path_a) - 4, ".sav") == 0;
+	int b_sav = path_b && strlen(path_b) >= 4 && strcmp(path_b + strlen(path_b) - 4, ".sav") == 0;
+	if (a_sav != b_sav)
+		return a_sav ? 1 : 0;
+	return 0;
+}
+
 bool savesync_parse_index_line(const char* line, long* mtime, long* size, char* path, size_t path_cap) {
 	if (!line || !mtime || !size || !path)
 		return false;

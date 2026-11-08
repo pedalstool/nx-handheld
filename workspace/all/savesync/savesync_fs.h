@@ -33,4 +33,12 @@ int savesync_read_file(const char* root, const char* rel, unsigned char** out, l
 // newer and bounce straight back.
 int savesync_write_file(const char* root, const char* rel, const unsigned char* data, long size, long mtime);
 
+// Cart file the game opens for rel. An existing .sav, .srm, or MinUI
+// name.ext.sav that shares the key wins (non-empty, then newer, then .sav).
+// Copies rel when nothing is on disk yet, or when rel is not a cart save.
+int savesync_cart_resolve(const char* root, const char* rel, char* out, size_t cap);
+// Writes the bytes onto every matching cart file already in the folder, and
+// creates "<key>.sav" when that name is not there yet.
+int savesync_cart_write(const char* root, const char* rel, const unsigned char* data, long size, long mtime);
+
 #endif

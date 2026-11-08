@@ -266,3 +266,115 @@ int savesync_write_file(const char* root, const char* rel, const unsigned char* 
 	utimensat(AT_FDCWD, path, ts, 0);
 	return 0;
 }
+
+static int cart_dir(const char* root, const char* rel, char* dir, size_t cap) {
+	const char* slash = strrchr(rel, '/');
+	int n;
+	if (!slash)
+		n = snprintf(dir, cap, "%s", root);
+	else
+		n = snprintf(dir, cap, "%s/%.*s", root, (int)(slash - rel), rel);
+	return (n < 0 || (size_t)n >= cap) ? -1 : 0;
+}
+
+int savesync_cart_resolve(const char* root, const char* rel, char* out, size_t cap) {
+	char key[512];
+	if (!savesync_cart_key(rel, key, sizeof(key))) {
+		if (snprintf(out, cap, "%s", rel) >= (int)cap)
+			return -1;
+		return 0;
+	}
+	char dir[512];
+	if (cart_dir(root, rel, dir, sizeof(dir)) != 0)
+		return -1;
+	const char* best = NULL;
+	long best_size = 0, best_mtime = 0;
+	char best_rel[512];
+	DIR* d = opendir(dir);
+	if (d) {
+		struct dirent* ent;
+		while ((ent = readdir(d)) != NULL) {
+			if (ent->d_name[0] == '.' || is_tmp_name(ent->d_name))
+				continue;
+			char child[512];
+			const char* slash = strrchr(rel, '/');
+			int n;
+			if (!slash)
+				n = snprintf(child, sizeof(child), "%s", ent->d_name);
+			else
+				n = snprintf(child, sizeof(child), "%.*s/%s", (int)(slash - rel), rel, ent->d_name);
+			if (n < 0 || (size_t)n >= sizeof(child) || !savesync_path_ok(child))
+				continue;
+			char other[512];
+			if (!savesync_cart_key(child, other, sizeof(other)) || strcmp(other, key) != 0)
+				continue;
+			char full[512];
+			if (snprintf(full, sizeof(full), "%s/%s", root, child) >= (int)sizeof(full))
+				continue;
+			struct stat st;
+			if (lstat(full, &st) != 0 || !S_ISREG(st.st_mode) || S_ISLNK(st.st_mode))
+				continue;
+			if (!best || savesync_cart_prefer(child, (long)st.st_size, (long)st.st_mtime, best, best_size, best_mtime)) {
+				best = best_rel;
+				snprintf(best_rel, sizeof(best_rel), "%s", child);
+				best_size = (long)st.st_size;
+				best_mtime = (long)st.st_mtime;
+			}
+		}
+		closedir(d);
+	}
+	if (best) {
+		if (snprintf(out, cap, "%s", best_rel) >= (int)cap)
+			return -1;
+		return 0;
+	}
+	if (snprintf(out, cap, "%s.sav", key) >= (int)cap)
+		return -1;
+	return 0;
+}
+
+int savesync_cart_write(const char* root, const char* rel, const unsigned char* data, long size, long mtime) {
+	char key[512];
+	if (!savesync_cart_key(rel, key, sizeof(key)))
+		return savesync_write_file(root, rel, data, size, mtime);
+	char dir[512];
+	if (cart_dir(root, rel, dir, sizeof(dir)) != 0)
+		return -1;
+	char sav[540];
+	if (snprintf(sav, sizeof(sav), "%s.sav", key) >= (int)sizeof(sav))
+		return -1;
+	int wrote = 0;
+	int wrote_sav = 0;
+	DIR* d = opendir(dir);
+	if (d) {
+		struct dirent* ent;
+		while ((ent = readdir(d)) != NULL) {
+			if (ent->d_name[0] == '.' || is_tmp_name(ent->d_name))
+				continue;
+			char child[512];
+			const char* slash = strrchr(rel, '/');
+			int n;
+			if (!slash)
+				n = snprintf(child, sizeof(child), "%s", ent->d_name);
+			else
+				n = snprintf(child, sizeof(child), "%.*s/%s", (int)(slash - rel), rel, ent->d_name);
+			if (n < 0 || (size_t)n >= sizeof(child) || !savesync_path_ok(child))
+				continue;
+			char other[512];
+			if (!savesync_cart_key(child, other, sizeof(other)) || strcmp(other, key) != 0)
+				continue;
+			if (savesync_write_file(root, child, data, size, mtime) != 0)
+				continue;
+			wrote++;
+			if (strcmp(child, sav) == 0)
+				wrote_sav = 1;
+		}
+		closedir(d);
+	}
+	if (!wrote_sav) {
+		if (savesync_write_file(root, sav, data, size, mtime) != 0)
+			return wrote ? 0 : -1;
+		wrote++;
+	}
+	return wrote ? 0 : -1;
+}

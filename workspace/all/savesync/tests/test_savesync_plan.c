@@ -49,6 +49,17 @@ int main(void) {
 	assert(!savesync_parse_index_line("nope", &mt, &sz, dec, sizeof(dec)));
 	assert(!savesync_parse_index_line("1\t-5\tGB/x.srm", &mt, &sz, dec, sizeof(dec)));
 
+	assert(savesync_cart_key("GBA/Golden Sun (USA, Europe).sav", dec, sizeof(dec)));
+	assert(strcmp(dec, "GBA/Golden Sun (USA, Europe)") == 0);
+	assert(savesync_cart_key("GBA/Golden Sun (USA, Europe).srm", dec, sizeof(dec)));
+	assert(strcmp(dec, "GBA/Golden Sun (USA, Europe)") == 0);
+	assert(savesync_cart_key("GBA/Golden Sun (USA, Europe).gba.sav", dec, sizeof(dec)));
+	assert(strcmp(dec, "GBA/Golden Sun (USA, Europe)") == 0);
+	assert(!savesync_cart_key("GBA/Golden Sun (USA, Europe).state", dec, sizeof(dec)));
+	assert(savesync_cart_prefer("GBA/Golden Sun.sav", 10, 100, "GBA/Golden Sun.srm", 10, 100) == 1);
+	assert(savesync_cart_prefer("GBA/Golden Sun.srm", 10, 200, "GBA/Golden Sun.sav", 10, 100) == 1);
+	assert(savesync_cart_prefer("GBA/Golden Sun.srm", 0, 200, "GBA/Golden Sun.sav", 10, 100) == 0);
+
 	printf("test_savesync_plan: all passed\n");
 	return 0;
 }

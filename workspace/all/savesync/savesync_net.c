@@ -383,7 +383,9 @@ static void handle_client(int fd, const char* root) {
 	if (strcmp(method, "GET") == 0 && strcmp(path_only, "/file") == 0) {
 		unsigned char* data = NULL;
 		long size = 0, mt = 0;
-		if (savesync_read_file(root, rel, &data, &size, &mt) != 0) {
+		char local[512];
+		if (savesync_cart_resolve(root, rel, local, sizeof(local)) != 0 ||
+			savesync_read_file(root, local, &data, &size, &mt) != 0) {
 			respond(fd, 404, "Not Found", NULL, NULL, 0);
 			return;
 		}
@@ -402,10 +404,12 @@ static void handle_client(int fd, const char* root) {
 			return;
 		}
 		struct stat st;
+		char local[512];
 		char full[512];
-		snprintf(full, sizeof(full), "%s/%s", root, rel);
 		long local_size = -1, local_mtime = 0;
-		if (lstat(full, &st) == 0 && S_ISREG(st.st_mode)) {
+		if (savesync_cart_resolve(root, rel, local, sizeof(local)) == 0 &&
+			snprintf(full, sizeof(full), "%s/%s", root, local) < (int)sizeof(full) &&
+			lstat(full, &st) == 0 && S_ISREG(st.st_mode)) {
 			local_size = (long)st.st_size;
 			local_mtime = (long)st.st_mtime;
 		}
@@ -417,7 +421,7 @@ static void handle_client(int fd, const char* root) {
 		}
 		if (mtime < 0)
 			mtime = local_mtime + 1;
-		if (savesync_write_file(root, rel, body, content_length, mtime) != 0) {
+		if (savesync_cart_write(root, rel, body, content_length, mtime) != 0) {
 			free(body);
 			respond(fd, 500, "Error", NULL, NULL, 0);
 			return;

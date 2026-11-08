@@ -36,4 +36,12 @@ bool savesync_decode_path(const char* in, char* out, size_t cap);
 // One index line: "<mtime>\t<size>\t<path>". False if the line is unusable.
 bool savesync_parse_index_line(const char* line, long* mtime, long* size, char* path, size_t path_cap);
 
+// Cart SRAM. "Name.sav", "Name.srm", and MinUI "Name.gba.sav" are one save.
+// Writes the shared key (folder + rom name). False when rel is not one of those.
+bool savesync_cart_key(const char* rel, char* out, size_t cap);
+
+// 1 when a is the cart file to keep. An empty file loses. A newer time wins.
+// The same time keeps .sav, which is the name the games load.
+int savesync_cart_prefer(const char* path_a, long size_a, long mtime_a, const char* path_b, long size_b, long mtime_b);
+
 #endif

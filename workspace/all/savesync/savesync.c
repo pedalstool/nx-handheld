@@ -110,6 +110,28 @@ int savesync_self_ip(char* out, size_t cap) {
 	return found;
 }
 
+static int same_cart(const char* a, const char* b) {
+	if (strcmp(a, b) == 0)
+		return 1;
+	char ka[512], kb[512];
+	return savesync_cart_key(a, ka, sizeof(ka)) && savesync_cart_key(b, kb, sizeof(kb)) && strcmp(ka, kb) == 0;
+}
+
+static const SavesyncEntry* best_cart(const SavesyncIndex* ix, const char* path) {
+	char key[512];
+	if (!savesync_cart_key(path, key, sizeof(key)))
+		return savesync_index_find(ix, path);
+	const SavesyncEntry* best = NULL;
+	for (int i = 0; i < ix->count; i++) {
+		char other[512];
+		if (!savesync_cart_key(ix->items[i].path, other, sizeof(other)) || strcmp(other, key) != 0)
+			continue;
+		if (!best || savesync_cart_prefer(ix->items[i].path, ix->items[i].size, ix->items[i].mtime, best->path, best->size, best->mtime))
+			best = &ix->items[i];
+	}
+	return best;
+}
+
 static int path_held(const char* path) {
 	FILE* f = fopen(HOLD_PATH, "r");
 	if (!f)
@@ -120,7 +142,7 @@ static int path_held(const char* path) {
 		size_t n = strlen(line);
 		while (n && (line[n - 1] == '\n' || line[n - 1] == '\r'))
 			line[--n] = '\0';
-		if (strcmp(line, path) == 0) {
+		if (same_cart(line, path)) {
 			found = 1;
 			break;
 		}
@@ -149,14 +171,16 @@ static void apply_transfers(const char* root, const char* peer, const SavesyncIn
 	if (want_push) {
 	for (int i = 0; i < local->count; i++) {
 		const SavesyncEntry* e = &local->items[i];
-		const SavesyncEntry* r = savesync_index_find(remote, e->path);
+		if (best_cart(local, e->path) != e)
+			continue;
+		const SavesyncEntry* r = best_cart(remote, e->path);
 		long rsize = r ? r->size : -1;
 		long rmtime = r ? r->mtime : -1;
 		if (savesync_decide(e->size, e->mtime, rsize, rmtime) != SAVESYNC_PUSH)
 			continue;
 		long base_mtime = -1;
 		if (base) {
-			const SavesyncEntry* b = savesync_index_find(base, e->path);
+			const SavesyncEntry* b = best_cart(base, e->path);
 			if (b)
 				base_mtime = b->mtime;
 		}
@@ -172,7 +196,8 @@ static void apply_transfers(const char* root, const char* peer, const SavesyncIn
 		if (savesync_read_file(root, e->path, &data, &size, &mt) != 0) {
 			continue;
 		}
-		int up = savesync_upload(peer, SAVESYNC_PORT, e->path, data, size, mt);
+		const char* dest = r ? r->path : e->path;
+		int up = savesync_upload(peer, SAVESYNC_PORT, dest, data, size, mt);
 		free(data);
 		if (up == 0)
 			(*pushed)++;
@@ -183,7 +208,9 @@ static void apply_transfers(const char* root, const char* peer, const SavesyncIn
 	if (want_pull) {
 	for (int i = 0; i < remote->count; i++) {
 		const SavesyncEntry* e = &remote->items[i];
-		const SavesyncEntry* loc = savesync_index_find(local, e->path);
+		if (best_cart(remote, e->path) != e)
+			continue;
+		const SavesyncEntry* loc = best_cart(local, e->path);
 		long lsize = loc ? loc->size : -1;
 		long lmtime = loc ? loc->mtime : 0;
 		if (savesync_decide(lsize, lmtime, e->size, e->mtime) != SAVESYNC_PULL)
@@ -199,7 +226,8 @@ static void apply_transfers(const char* root, const char* peer, const SavesyncIn
 			free(data);
 			continue;
 		}
-		if (savesync_write_file(root, e->path, data, size, mt) == 0)
+		const char* dest = loc ? loc->path : e->path;
+		if (savesync_cart_write(root, dest, data, size, mt) == 0)
 			(*pulled)++;
 		free(data);
 	}
