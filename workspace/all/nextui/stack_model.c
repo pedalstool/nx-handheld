@@ -15,8 +15,8 @@ StackSizes Stack_mainSizes(StackKind k, float body_w) {
 	switch (k) {
 	case STACK_MAIN_CONSOLES: { // by the screen alone (u = body_w / 960 dp, px independent of the UI scale)
 		float u = body_w / 960.0f;
-		// the gap never under 16 dp: the "N games" line under each logo is UI-scale text and needs that room
-		s.item_w = 490 * u, s.item_h = 149 * u, s.gap = maxf(30 * u, 16), s.cap = 26, s.side_alpha = ROW_LOGO_SIDE_ALPHA;
+		// No count line under the logo, so the selection sits on the body center.
+		s.item_w = 490 * u, s.item_h = 149 * u, s.gap = maxf(30 * u, 16), s.cap = 0, s.side_alpha = ROW_LOGO_SIDE_ALPHA;
 		break;
 	}
 	case STACK_MAIN_COLLECTIONS:

@@ -2414,10 +2414,26 @@ int PLAT_textShouldScroll(TTF_Font* font, const char* in_name, int max_width, SD
 static int text_offset = 0;
 static int scroll_frame_counter = 0;
 static bool scroll_initial_pause = true;
+static SDL_Texture* scroll_tex = NULL;
+static TTF_Font* scroll_font = NULL;
+static char scroll_name[192];
+static int scroll_r, scroll_g, scroll_b, scroll_a;
+static int scroll_single_w, scroll_full_w, scroll_tex_h;
+
+static void scroll_tex_drop(void) {
+	if (scroll_tex) {
+		SDL_DestroyTexture(scroll_tex);
+		scroll_tex = NULL;
+	}
+	scroll_name[0] = '\0';
+	scroll_font = NULL;
+}
+
 void PLAT_resetScrollText() {
 	text_offset = 0;
 	scroll_frame_counter = 0;
 	scroll_initial_pause = true;
+	scroll_tex_drop();
 }
 void PLAT_scrollTextTexture(
 	TTF_Font* font,
@@ -2437,37 +2453,61 @@ void PLAT_scrollTextTexture(
 		transparency = 1.0f;
 	color.a = (Uint8)(transparency * 255);
 
-	// Render the original text with mutex protection for thread safety
-	if (fontMutex)
-		SDL_LockMutex(fontMutex);
-	SDL_Surface* singleSur = GFX_renderText(font, in_name, color);
-	if (fontMutex)
-		SDL_UnlockMutex(fontMutex);
-	if (!singleSur)
-		return;
+	// The glyphs do not change while a title scrolls. Rebuild the texture
+	// only when the string, font, or colour does.
+	int cache_hit = scroll_tex && scroll_font == font && scroll_r == color.r && scroll_g == color.g &&
+					scroll_b == color.b && scroll_a == color.a && strcmp(scroll_name, in_name) == 0;
+	int single_width, single_height, full_text_width;
+	SDL_Texture* full_text_texture;
+	if (cache_hit) {
+		single_width = scroll_single_w;
+		single_height = scroll_tex_h;
+		full_text_width = scroll_full_w;
+		full_text_texture = scroll_tex;
+	} else {
+		if (fontMutex)
+			SDL_LockMutex(fontMutex);
+		SDL_Surface* singleSur = GFX_renderText(font, in_name, color);
+		if (fontMutex)
+			SDL_UnlockMutex(fontMutex);
+		if (!singleSur)
+			return;
 
-	int single_width = singleSur->w;
-	int single_height = singleSur->h;
+		single_width = singleSur->w;
+		single_height = singleSur->h;
 
-	// Create a surface to hold two copies side by side with padding
-	SDL_Surface* text_surface = SDL_CreateRGBSurfaceWithFormat(0,
-															   single_width * 2 + padding, single_height, 32, SDL_PIXELFORMAT_ARGB8888);
+		SDL_Surface* text_surface = SDL_CreateRGBSurfaceWithFormat(0,
+																   single_width * 2 + padding, single_height, 32, SDL_PIXELFORMAT_ARGB8888);
 
-	SDL_FillRect(text_surface, NULL, THEME_COLOR1);
-	SDL_BlitSurface(singleSur, NULL, text_surface, NULL);
+		SDL_FillRect(text_surface, NULL, THEME_COLOR1);
+		SDL_BlitSurface(singleSur, NULL, text_surface, NULL);
 
-	SDL_Rect second = {single_width + padding, 0, single_width, single_height};
-	SDL_BlitSurface(singleSur, NULL, text_surface, &second);
-	SDL_FreeSurface(singleSur);
+		SDL_Rect second = {single_width + padding, 0, single_width, single_height};
+		SDL_BlitSurface(singleSur, NULL, text_surface, &second);
+		SDL_FreeSurface(singleSur);
 
-	SDL_Texture* full_text_texture = SDL_CreateTextureFromSurface(vid.renderer, text_surface);
-	int full_text_width = text_surface->w;
-	SDL_FreeSurface(text_surface);
+		full_text_texture = SDL_CreateTextureFromSurface(vid.renderer, text_surface);
+		full_text_width = text_surface->w;
+		SDL_FreeSurface(text_surface);
 
-	if (!full_text_texture)
-		return;
+		if (!full_text_texture)
+			return;
 
-	SDL_SetTextureBlendMode(full_text_texture, SDL_BLENDMODE_BLEND);
+		SDL_SetTextureBlendMode(full_text_texture, SDL_BLENDMODE_BLEND);
+		if (strlen(in_name) < sizeof(scroll_name)) {
+			scroll_tex_drop();
+			scroll_tex = full_text_texture;
+			scroll_font = font;
+			snprintf(scroll_name, sizeof(scroll_name), "%s", in_name);
+			scroll_r = color.r;
+			scroll_g = color.g;
+			scroll_b = color.b;
+			scroll_a = color.a;
+			scroll_single_w = single_width;
+			scroll_full_w = full_text_width;
+			scroll_tex_h = single_height;
+		}
+	}
 	SDL_SetTextureAlphaMod(full_text_texture, color.a);
 
 	SDL_SetRenderTarget(vid.renderer, vid.target_layer4);
@@ -2485,7 +2525,8 @@ void PLAT_scrollTextTexture(
 	SDL_RenderCopy(vid.renderer, full_text_texture, &src_rect, &dst_rect);
 
 	SDL_SetRenderTarget(vid.renderer, NULL);
-	SDL_DestroyTexture(full_text_texture);
+	if (full_text_texture != scroll_tex)
+		SDL_DestroyTexture(full_text_texture);
 
 	// Scroll only if text is wider than clip width
 	if (single_width > w) {
@@ -2574,9 +2615,10 @@ void PLAT_animateSurfaceOpacity(
 		SDL_RenderCopy(vid.renderer, tempTexture, NULL, &dstRect);
 
 		SDL_SetRenderTarget(vid.renderer, NULL);
-		// blit to 0 for normal draw
+		// The surface is already on the GPU. Present the layers; uploading
+		// the UI texture again each step was a full 1024x768 copy.
 		vid.blit = 0;
-		PLAT_flip(vid.screen, 0);
+		PLAT_GPU_Flip();
 	}
 
 	SDL_DestroyTexture(tempTexture);
@@ -2607,12 +2649,10 @@ SDL_Surface* PLAT_captureRendererToSurface() {
 	// remove transparancy
 	Uint32* pixels = (Uint32*)surface->pixels;
 	int total_pixels = (surface->pitch / 4) * surface->h;
+	Uint32 amask = surface->format->Amask;
 
-	for (int i = 0; i < total_pixels; i++) {
-		Uint8 r, g, b, a;
-		SDL_GetRGBA(pixels[i], surface->format, &r, &g, &b, &a);
-		pixels[i] = SDL_MapRGBA(surface->format, r, g, b, 255);
-	}
+	for (int i = 0; i < total_pixels; i++)
+		pixels[i] |= amask;
 
 	SDL_SetSurfaceBlendMode(surface, SDL_BLENDMODE_NONE);
 	return surface;

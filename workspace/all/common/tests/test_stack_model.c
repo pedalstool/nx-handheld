@@ -32,7 +32,7 @@ static void slot_tables(void) {
 		StackSizes c = Stack_mainSizes(STACK_MAIN_CONSOLES, ws[i]); // by the screen: u = width / 960
 		float u = ws[i] / 960;
 		assert(near(c.item_w, 490 * u, 1e-3f) && near(c.item_h, 149 * u, 1e-3f) && near(c.scale, 0.5f, 1e-6f));
-		assert(near(c.gap, fmaxf(30 * u, 16), 1e-4f) && near(c.cap, 26, 1e-6f) && near(c.side_alpha, 0.65f, 1e-6f));
+		assert(near(c.gap, fmaxf(30 * u, 16), 1e-4f) && near(c.cap, 0, 1e-6f) && near(c.side_alpha, 0.65f, 1e-6f));
 		StackSizes l = Stack_mainSizes(STACK_MAIN_COLLECTIONS, ws[i]);
 		assert(near(l.item_w, 400, 1e-4f) && near(l.item_h, 100, 1e-4f) && near(l.scale, 0.5f, 1e-6f));
 		assert(near(l.gap, 14, 1e-6f) && near(l.cap, 0, 1e-6f));
