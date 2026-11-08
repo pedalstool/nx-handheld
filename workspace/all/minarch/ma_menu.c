@@ -134,9 +134,6 @@ void Menu_init(void) {
 	// always sanitized/outer name, to keep main UI from having to inspect archives
 	snprintf(menu.slot_path, sizeof(menu.slot_path), "%s/%s.txt", menu.minui_dir, game.name);
 
-	if (simple_mode)
-		menu.items[ITEM_OPTS] = "Reset";
-
 	if (game.m3u_path[0]) {
 		strcpy(menu.base_path, game.m3u_path);
 		char* tmp = strrchr(menu.base_path, '/');
@@ -1821,25 +1818,20 @@ void Menu_loop(void) {
 				show_menu = 0;
 			} break;
 			case ITEM_OPTS: {
-				if (simple_mode) {
-					Core_reset();
-					show_menu = 0;
-				} else {
-					int old_scaling = screen_scaling;
-					Options_updateVisibility();
-					Menu_options(&options_menu);
-					if (screen_scaling != old_scaling) {
-						selectScaler(renderer.true_w, renderer.true_h, renderer.src_p);
+				int old_scaling = screen_scaling;
+				Options_updateVisibility();
+				Menu_options(&options_menu);
+				if (screen_scaling != old_scaling) {
+					selectScaler(renderer.true_w, renderer.true_h, renderer.src_p);
 
-						restore_w = screen->w;
-						restore_h = screen->h;
-						restore_p = screen->pitch;
-						screen = GFX_resize(DEVICE_WIDTH, DEVICE_HEIGHT, DEVICE_PITCH);
-						SDL_Rect dst = {0, 0, DEVICE_WIDTH, DEVICE_HEIGHT};
-						SDL_BlitScaled(menu.bitmap, NULL, backing, &dst);
-					}
-					dirty = true;
+					restore_w = screen->w;
+					restore_h = screen->h;
+					restore_p = screen->pitch;
+					screen = GFX_resize(DEVICE_WIDTH, DEVICE_HEIGHT, DEVICE_PITCH);
+					SDL_Rect dst = {0, 0, DEVICE_WIDTH, DEVICE_HEIGHT};
+					SDL_BlitScaled(menu.bitmap, NULL, backing, &dst);
 				}
+				dirty = true;
 			} break;
 			case ITEM_QUIT:
 				Menu_holdScreenForQuit();

@@ -7,9 +7,13 @@ Brick / Brick Hammer fork of [NX Redux](https://github.com/nx-redux/nx-handheld)
 - **Brick / Hammer only** — same `tg5040` `DEVICE=brick` build; Brick Pro, Smart Pro, and Smart Pro S are not supported
 - **No media apps** — Music Player, Media Player, Image Viewer, and the OSD music widget are removed
 - **No Device Sync** — the tool that copies saves, ROMs, and BIOS between devices is not included
+- **Save sync** — the Brick and a Thor share saves. The newer file wins. Tools → Save Sync stores the Thor's address. The menu listens while you are in it; starting a game takes a newer save from the Thor, and leaving the game sends one back. If the Thor is off, the game still starts and that save is held until you sync on purpose
 - **Console text color** — Settings includes console title / text color (from console-text-color v6)
 - **Faster console backgrounds** — screen-sized backgrounds are cached and shared (no copy on revisit); neighboring consoles prefetch while idle so browsing the Consoles list stays responsive. Returning to a console draws that background again
 - **Console transitions** — cycling through systems eases the full-screen background from one console into the next, in time with the selection. It follows the menu animations setting
+- **Consoles carousel** — only the selected console stays on screen
+- **No Minimal on Consoles or game lists** — those layouts are List, Grid, or Carousel, and game lists still have Backdrop. Home, Collections, and Tools still offer Minimal. A saved Minimal setting for Consoles or a game list shows as Carousel
+- **No Simple mode** — Settings no longer has it, and there is no PIN gate on Tools or in-game Options
 - **Last Played** — "Recently Played" / Game Switcher "Recent" labels are "Last Played" (from [BRICK-UI](https://github.com/bebeidon/BRICK-UI))
 - **Battery as plain text** — with battery percentage enabled, the status bar shows `80%` (text only)
 - **Power Off in MENU menu** — MENU context menu includes Power Off (alongside Refresh Roms / Tools)

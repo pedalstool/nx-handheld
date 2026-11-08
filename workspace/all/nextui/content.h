@@ -4,9 +4,6 @@
 #include "types.h"
 #include <stdbool.h>
 
-// Set simple_mode for content functions
-void Content_setSimpleMode(bool mode);
-
 // Directory construction
 Directory* Directory_new(char* path, int selected);
 

@@ -30,7 +30,6 @@
 static MenuTabId tabs[MENU_TAB_COUNT];
 static int tab_count = 0;
 static MenuTabId current = MENU_TAB_HOME;
-static bool simple_mode = false;
 
 // Parked roots (T1-1, menutabs_model.h): L1/R1 parks the outgoing tab's stack[0] here and takes the incoming
 // one's, so a tab switch costs no card I/O. Only tabs that are NOT current have a root here (the stack owns
@@ -54,25 +53,13 @@ static void dropAllSlots(void) {
 		dropSlot((MenuTabId)id);
 }
 
-static bool settingsPakExists(void) {
-	char path[MAX_PATH];
-	snprintf(path, sizeof(path), "%s/Settings.pak", TOOLS_PATH);
-	if (exists(path))
-		return true;
-	snprintf(path, sizeof(path), "%s/Tools/Settings.pak", PAKS_PATH);
-	return exists(path);
-}
-
 // What the visible tabs are computed from, kept between reloads (T2-11): a reload re-reads only the inputs its
 // mask says may have changed (MenuTabs_reloadPlan), and recomputes the tabs from the rest as last read.
 static MenuTabInputs last_in;
 
-// Re-read what `plan` asks for, then recompute the visible tabs. The CFG flags, simple mode, Tools and the
-// Settings pak change only outside nextui (Settings, a card edit), so only the full pass (boot, MENU_RELOAD_ALL)
-// reads them.
+// Re-read what `plan` asks for, then recompute the visible tabs. The CFG flags and Tools change only outside
+// nextui (Settings, a card edit), so only the full pass (boot, MENU_RELOAD_ALL) reads them.
 static void refreshInputs(const MenuReloadPlan* plan) {
-	if (plan->check_all)
-		simple_mode = exists(SIMPLE_MODE_PATH);
 	if (plan->validate_pins && Shortcuts_getCount() > 0)
 		Shortcuts_validate();
 	// No tab lists recents any more, but this is what fills the Game
@@ -85,8 +72,6 @@ static void refreshInputs(const MenuReloadPlan* plan) {
 		last_in.show_collections = CFG_getShowCollections();
 		last_in.show_tools = CFG_getShowTools();
 		last_in.has_tools = hasTools() != 0;
-		last_in.simple_mode = simple_mode;
-		last_in.has_settings = settingsPakExists();
 	}
 	if (plan->check_consoles)
 		last_in.has_consoles = Content_hasConsoles() != 0;
@@ -146,7 +131,7 @@ bool MenuTabs_isVisible(MenuTabId id) {
 }
 
 bool MenuTabs_pushable(MenuTabId id) {
-	if (simple_mode || MenuTabs_isVisible(id))
+	if (MenuTabs_isVisible(id))
 		return false;
 	switch (id) {
 	case MENU_TAB_CONSOLES:

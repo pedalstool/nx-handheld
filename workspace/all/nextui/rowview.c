@@ -2954,6 +2954,17 @@ void RowView_render(SDL_Surface* screen, int lastScreen) {
 	// (carouselItemCy)
 	bool float_sel = (kind == ROW_CAROUSEL || kind == ROW_BACKDROP_BOX) && g.cap != CAP_NONE;
 
+	// Consoles: only the selected logo, held in the centre. The row used to keep the previous and next
+	// consoles on screen beside it.
+	if (kind == ROW_BACKDROP_LOGO && sel >= 0 && sel < n) {
+		Entry* e = top->entries->items[sel];
+		TileKind k = kindFor(sel, e);
+		draw_selected = true;
+		RowView_drawPad(screen, e, k, pad_w, pad_h, g.cx, g.cy, 1.0f, 0);
+		drawBackdropItem(screen, &g, e, k, g.cx, g.cy, 1.0f, 1.0f, 0);
+		draw_selected = false;
+	}
+
 	// far to near (the largest d first), so the centre lands on top
 	int first, last;
 	Row_visibleRange(n, pos, &first, &last);
@@ -2971,6 +2982,8 @@ void RowView_render(SDL_Surface* screen, int lastScreen) {
 	}
 	for (int j = 0; j < count; j++) {
 		int i = order[j];
+		if (kind == ROW_BACKDROP_LOGO)
+			continue;
 		RowItem it = Row_item(&g.sz, kind, (float)i, pos);
 		if (!it.visible)
 			continue;
@@ -2981,8 +2994,6 @@ void RowView_render(SDL_Surface* screen, int lastScreen) {
 		if (kind == ROW_CAROUSEL)
 			drawCarouselItem(screen, &g, e, k, cx, float_sel ? carouselItemCy(&g, i, sel, d) : g.cy, it.scale, it.darken, d);
 		else {
-			if (kind == ROW_BACKDROP_LOGO) // the focused console's controller, under its logo
-				RowView_drawPad(screen, e, k, pad_w, pad_h, cx, g.cy, it.scale, d);
 			draw_selected = i == sel;
 			drawBackdropItem(screen, &g, e, k, cx, float_sel ? carouselItemCy(&g, i, sel, d) : g.cy, it.scale, it.alpha, d);
 			draw_selected = false;

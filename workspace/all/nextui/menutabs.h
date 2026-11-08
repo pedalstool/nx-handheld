@@ -23,7 +23,7 @@ void MenuTabs_dropCached(MenuTabId id);
 void MenuTabs_quit(void);
 bool MenuTabs_isVisible(MenuTabId id);
 // The root context menu offers `id` (Consoles, Collections or Tools) as a list pushed over the current tab: the tab is
-// hidden, has something to list, and simple mode is off.
+// hidden and has something to list.
 bool MenuTabs_pushable(MenuTabId id);
 const char* MenuTabs_path(MenuTabId id);			 // the stack[0] path for a tab
 MenuTabId MenuTabs_forPathVisible(const char* path); // MenuTabs_forPath, then Home

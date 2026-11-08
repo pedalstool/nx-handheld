@@ -908,6 +908,8 @@ void CFG_setFnLEDs(bool on) {
 int CFG_getMenuStyle(int category) {
 	if (category < 0 || category >= MENU_CAT_COUNT)
 		return MENU_STYLE_LIST;
+	if (category == MENU_CAT_CONSOLES)
+		return MenuStyle_consoles(settings.menuStyle[category]);
 	return MenuStyle_mainMenu(settings.menuStyle[category]);
 }
 
@@ -972,7 +974,10 @@ void CFG_setHomeStyle(int style) {
 int CFG_getMenuOrientEffective(int category) {
 	if (category < 0 || category >= MENU_CAT_COUNT)
 		return MENU_ORIENT_HORIZONTAL;
-	return MenuStyle_mainMenuOrient(settings.menuStyle[category], settings.menuOrient[category]);
+	int style = settings.menuStyle[category];
+	if (category == MENU_CAT_CONSOLES)
+		style = MenuStyle_consoles(style);
+	return MenuStyle_mainMenuOrient(style, settings.menuOrient[category]);
 }
 
 int CFG_getGameListOrientEffective(void) {

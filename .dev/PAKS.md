@@ -120,8 +120,8 @@ Bundled paks ship inside `.system` with a platform-less layout:
 launcher's binary PATH is `.system/bin`). Pak resolution goes: system paks →
 SD flat (`Emus/<TAG>.pak`) → SD platform subfolder
 (`Emus/<PLATFORM>/<TAG>.pak`) (`getEmuPath` in `common/utils.c`; `getTools`
-in nextui's `content.c`, simple mode's Settings entry and the settings app's
-F-key tool list use the same order). The platform-subfolder fallback exists
+in nextui's `content.c` and the settings app's F-key tool list use the same
+order). The platform-subfolder fallback exists
 because community paks (e.g. minui-psp) hardcode the MinUI
 `Emus/$PLATFORM/$PAK_NAME.pak` path internally — flat placement launches but
 then points at the wrong directory.

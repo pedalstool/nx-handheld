@@ -1,12 +1,8 @@
 #include "ui_confirmdialog.h"
 #include "ui_draw.h"
-#include "ui_pindialog.h"
 #include "confirm_wrap.h"
 #include "api.h"
 #include "defines.h"
-
-#include <string.h>
-#include <stdio.h>
 
 #define CONFIRM_MAX_SUB_LINES 4
 
@@ -221,46 +217,4 @@ int UI_choiceModal(SDL_Surface* screen, const char* title, const char* subtitle,
 	};
 	int result = UI_modalLoop(&opts);
 	return result >= 0 ? result : UI_CHOICE_CANCEL;
-}
-
-typedef struct {
-	char* pin_out;
-} UI_PinModalCtx;
-
-static void pinModal_render(SDL_Surface* screen, void* vctx) {
-	(void)vctx;
-	PinDialog_render(screen);
-}
-
-static int pinModal_handle(void* vctx) {
-	UI_PinModalCtx* ctx = vctx;
-	PinDialogResult r = PinDialog_handleInput();
-	if (r.action == PINDIALOG_CONFIRMED) {
-		snprintf(ctx->pin_out, PINDIALOG_PIN_LEN + 1, "%s", r.pin);
-		return 1;
-	}
-	if (r.action == PINDIALOG_CANCEL)
-		return 0;
-	// any held/pressed button may have changed a digit
-	return PAD_anyPressed() ? UI_MODAL_DIRTY : UI_MODAL_CONTINUE;
-}
-
-bool UI_pinModal(SDL_Surface* screen, const char* title, const char* error, char* pin_out,
-				 const volatile bool* quit_flag, bool clear_layers, bool reset_pad) {
-	PinDialog_init(title);
-	PinDialog_setError(error);
-	UI_PinModalCtx ctx = {pin_out};
-	UI_ModalOpts opts = {
-		.screen = screen,
-		.render = pinModal_render,
-		.handle = pinModal_handle,
-		.ctx = &ctx,
-		.quit_flag = quit_flag,
-		.timeout_ms = 0,
-		.clear_layers = clear_layers,
-		.reset_pad = reset_pad,
-	};
-	bool confirmed = UI_modalLoop(&opts) == 1;
-	PinDialog_quit();
-	return confirmed;
 }

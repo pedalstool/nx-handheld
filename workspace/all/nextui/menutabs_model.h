@@ -16,7 +16,6 @@ typedef struct {
 	bool show_consoles, has_consoles;
 	bool show_collections, has_collections;
 	bool show_tools, has_tools;
-	bool simple_mode, has_settings; // simple mode: the Tools tab is just Settings
 } MenuTabInputs;
 
 typedef struct {

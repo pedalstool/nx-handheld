@@ -54,7 +54,6 @@ SDL_Surface* screen;
 int quit = 0;
 int newScreenshot = 0;
 int show_menu = 0;
-int simple_mode = 0;
 enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
 
 // default frontend options
@@ -238,8 +237,6 @@ int main(int argc, char* argv[]) {
 	Game_open(rom_path); // nes tries to load gamegenie setting before this returns ffs
 	if (!game.is_open)
 		goto finish;
-
-	simple_mode = exists(SIMPLE_MODE_PATH);
 
 	// restore options
 	Config_load(); // before init?

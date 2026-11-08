@@ -16,8 +16,7 @@ int MenuTabs_visible(const MenuTabInputs* in, MenuTabId out[MENU_TAB_COUNT]) {
 		out[n++] = MENU_TAB_CONSOLES;
 	if (in->show_collections && in->has_collections)
 		out[n++] = MENU_TAB_COLLECTIONS;
-	// simple mode keeps Settings reachable whatever the Tools toggle says
-	if (in->simple_mode ? in->has_settings : (in->show_tools && in->has_tools))
+	if (in->show_tools && in->has_tools)
 		out[n++] = MENU_TAB_TOOLS;
 	if (n == 0) // Home hidden and nothing else to show: keep it, the menu needs a tab
 		out[n++] = MENU_TAB_HOME;

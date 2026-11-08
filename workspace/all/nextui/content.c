@@ -19,22 +19,15 @@
 #include "entry_names.h"
 #include "api.h"
 
-static bool _simple_mode = false;
-
 // file-local content builders (exported API lives in content.h)
 static Array* getRoms(void);
 static Array* getPinned(void);
-static Array* getSimpleTools(void);
 static Array* getCollection(char* path);
 static Array* getDiscs(char* path);
 static Array* getEntries(char* path);
 static void addEntries(Array* entries, char* path);
 
 // EMULIST_CACHE_PATH and ROMINDEX_CACHE_PATH defined in defines.h
-
-void Content_setSimpleMode(bool mode) {
-	_simple_mode = mode;
-}
 
 ///////////////////////////////////////
 // Directory indexing (the naming rules are entry_names.c's)
@@ -356,7 +349,7 @@ Directory* Directory_new(char* path, int selected) {
 	} else if (suffixMatch(".m3u", path)) {
 		self->entries = getDiscs(path);
 	} else if (exactMatch(path, TOOLS_PATH)) {
-		self->entries = _simple_mode ? getSimpleTools() : getTools();
+		self->entries = getTools();
 	} else {
 		self->entries = getEntries(path);
 	}
@@ -1368,20 +1361,6 @@ static Array* getPinned(void) {
 	}
 
 	return root;
-}
-
-// Simple mode's Tools tab: Settings only. Simple mode hides the other tools,
-// but Settings must stay reachable (the game list PIN-gates it) or parents
-// get locked out of the device.
-static Array* getSimpleTools(void) {
-	Array* entries = Array_new();
-	char settings_path[MAX_PATH];
-	snprintf(settings_path, sizeof(settings_path), "%s/Tools/Settings.pak", PAKS_PATH); // the shipped pak wins
-	if (!exists(settings_path))
-		snprintf(settings_path, sizeof(settings_path), "%s/Settings.pak", TOOLS_PATH);
-	if (exists(settings_path))
-		EntryArray_push(entries, Entry_newNamed(settings_path, ENTRY_PAK, "Settings"));
-	return entries;
 }
 
 int Content_forEachCollectionGame(const char* path, bool (*cb)(const char* sd_path, void* ctx), void* ctx) {

@@ -57,10 +57,4 @@ enum {
 int UI_choiceModal(SDL_Surface* screen, const char* title, const char* subtitle,
 				   const volatile bool* quit_flag, bool clear_layers, bool reset_pad);
 
-// Full-screen PIN-entry modal built on UI_modalLoop. Owns PinDialog_init/
-// PinDialog_quit for the call. Returns true and fills pin_out (at least
-// PINDIALOG_PIN_LEN+1 bytes) on confirm, false on cancel/quit_flag/timeout.
-bool UI_pinModal(SDL_Surface* screen, const char* title, const char* error, char* pin_out,
-				 const volatile bool* quit_flag, bool clear_layers, bool reset_pad);
-
 #endif // UI_CONFIRMDIALOG_H

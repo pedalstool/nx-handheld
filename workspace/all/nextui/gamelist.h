@@ -13,8 +13,6 @@ typedef struct {
 	bool folderbgchanged; // request a background layer refresh
 } GameListResult;
 
-void GameList_init(bool simple_mode);
-
 // Handle one frame of input for the game list screen.
 // `dirty` is the caller's redraw flag; it may already be set by other systems
 // (power/status bar) and is also raised here on any visible change.
@@ -97,7 +95,5 @@ void GameList_contextMenuClosed(void);
 void GameList_switchTab(int delta, bool* dirty);
 // Open a visible tab at the root (Home's "Pick a game" → Consoles), with the same clears as a switch.
 void GameList_openTab(MenuTabId id, bool* dirty);
-// Simple mode: launching Settings asks for the parent PIN (true = go ahead).
-bool GameList_settingsPinAllows(Entry* entry);
 
 #endif // GAMELIST_H

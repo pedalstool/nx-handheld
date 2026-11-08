@@ -27,7 +27,6 @@
 #include "ui_confirmdialog.h"
 #include "ui_quitrequest.h"
 #include "ui_splash.h"
-#include "ui_pindialog.h"
 #include "ui_buttonhintbar.h"
 #include "display_helper.h"
 
@@ -273,13 +272,16 @@ static int exposure_values[] = {-4, -3, -2, -1, 0, 1, 2, 3, 4, 5};
 static int on_off_values[] = {0, 1};
 
 
-/* Main menu tab and game list styles for the Layouts page: the main-menu tabs offer List, Grid, Carousel and
-   Minimal (MENUSTYLE_MAIN_COUNT), game lists those and Backdrop (MENUSTYLE_GAMELIST_COUNT) */
+/* Consoles and game lists: List, Grid, Carousel, and Backdrop for game lists. Collections and Tools also
+   offer Minimal (MENUSTYLE_MAIN_COUNT). */
+static const char* console_style_labels[] = {"List", "Grid", "Carousel"};
+static int console_style_values[] = {MENU_STYLE_LIST, MENU_STYLE_GRID, MENU_STYLE_CAROUSEL};
+#define CONSOLE_STYLE_COUNT 3
 static const char* menu_style_labels[] = {"List", "Grid", "Carousel", "Minimal"};
 static int menu_style_values[] = {MENU_STYLE_LIST, MENU_STYLE_GRID, MENU_STYLE_CAROUSEL, MENU_STYLE_MINIMAL};
-static const char* game_list_style_labels[] = {"List", "Grid", "Carousel", "Backdrop", "Minimal"};
-static int game_list_style_values[] = {MENU_STYLE_LIST, MENU_STYLE_GRID, MENU_STYLE_CAROUSEL, MENU_STYLE_BACKDROP,
-									   MENU_STYLE_MINIMAL};
+static const char* game_list_style_labels[] = {"List", "Grid", "Carousel", "Backdrop"};
+static int game_list_style_values[] = {MENU_STYLE_LIST, MENU_STYLE_GRID, MENU_STYLE_CAROUSEL, MENU_STYLE_BACKDROP};
+#define GAME_LIST_STYLE_COUNT 4
 /* Carousel / Backdrop orientation rows: each sits directly under its style row and shows only while that style
    has an orientation (sync_layouts_rows) */
 static const char* orient_labels[] = {"Horizontal", "Vertical"};
@@ -1409,7 +1411,6 @@ static void init_about_info(void) {
 #define MAX_FNKEY_ITEMS 3
 #define MAX_NOTIFY_ITEMS 8
 #define MAX_ABOUT_ITEMS 8
-#define MAX_SIMPLE_MODE_ITEMS 2
 #define MAX_SHORTCUT_ITEMS (SHORTCUT_COUNT + 1)
 #define MAX_MAIN_ITEMS 18
 
@@ -1422,7 +1423,6 @@ static SettingItem fnkey_items[MAX_FNKEY_ITEMS];
 static SettingItem shortcut_items[MAX_SHORTCUT_ITEMS];
 static SettingItem notify_items[MAX_NOTIFY_ITEMS];
 static SettingItem about_items[MAX_ABOUT_ITEMS];
-static SettingItem simple_mode_items[MAX_SIMPLE_MODE_ITEMS];
 static SettingItem main_items[MAX_MAIN_ITEMS];
 
 static SettingsPage appearance_page;
@@ -1435,7 +1435,6 @@ static SettingsPage fn_keys_page;
 static SettingsPage shortcuts_page;
 static SettingsPage notify_page;
 static SettingsPage about_page;
-static SettingsPage simple_mode_page;
 static SettingsPage main_page;
 
 /* WiFi/BT/LED pages (created upfront in build_menu_tree) */
@@ -1446,14 +1445,6 @@ static SettingsPage* led_page_ptr = NULL;
 static SettingsPage* dev_page_ptr = NULL;
 
 static SDL_Surface* g_screen = NULL;
-
-// Blocking PIN dialog on g_screen. Returns true and fills pin_out (5 bytes)
-// on confirm, false on cancel.
-static bool run_pin_dialog(const char* title, const char* error, char* pin_out) {
-	if (!g_screen)
-		return false;
-	return UI_pinModal(g_screen, title, error, pin_out, &app_quit, false, true);
-}
 
 // Blocking confirmation modal on g_screen. A confirms, B cancels.
 static bool run_confirm_dialog(const char* title, const char* subtitle) {
@@ -1480,40 +1471,6 @@ static void reboot_now(void) { request_power(true); }
 // Every page's "Reset to defaults" asks first: one press would otherwise wipe the whole menu's choices.
 static bool confirm_reset_page(void) {
 	return run_confirm_dialog("Reset to defaults?", "Every option in this menu goes back to its default value.");
-}
-
-// Blocking full-screen help for Simple Mode. B closes.
-static void show_simple_mode_help(void) {
-	if (!g_screen)
-		return;
-
-	char* help_text =
-		"Simple Mode hides Tools and the game\n"
-		"menu's Delete, Rename, Pin and options,\n"
-		"and replaces Options with Reset in-game.\n"
-		"\n"
-		"Settings stays on the home screen,\n"
-		"protected by a PIN set when enabling\n"
-		"Simple Mode.\n"
-		"\n"
-		"Forgot the PIN? On the SD card, delete:\n"
-		".userdata/shared/enable-simple-mode";
-
-	while (!app_quit) {
-		GFX_startFrame();
-		PAD_poll();
-		if (PAD_justPressed(BTN_B))
-			break;
-		GFX_clear(g_screen);
-		UI_renderMenuBar(g_screen, "Settings | Simple Mode");
-		GFX_blitMessage(font.small, help_text, g_screen,
-						&(SDL_Rect){SCALE1(PADDING), 0,
-									g_screen->w - SCALE1(PADDING * 2), g_screen->h});
-		UI_renderButtonHintBar(g_screen, (char*[]){"B", "CLOSE", NULL});
-		GFX_flip(g_screen);
-	}
-	PAD_poll();
-	PAD_reset(); // don't leak the close press to the menu underneath
 }
 
 // ============================================
@@ -1688,39 +1645,6 @@ typedef struct ShortcutRow {
 #define SHORTCUT_ROW_(id, name) [SHORTCUT_##id] = {get_shortcut_##id, set_shortcut_##id, clear_shortcut_##id, capture_shortcut_##id},
 static const ShortcutRow shortcut_rows[SHORTCUT_COUNT] = {SHORTCUT_LIST(SHORTCUT_ROW_)};
 #undef SHORTCUT_ROW_
-
-// ============================================
-// Simple Mode callbacks
-// ============================================
-
-static int get_simple_mode(void) {
-	return exists((char*)SIMPLE_MODE_PATH) ? 1 : 0;
-}
-static void set_simple_mode(int v) {
-	if (v) {
-		if (exists((char*)SIMPLE_MODE_PATH))
-			return; // already on
-
-		char pin[PINDIALOG_PIN_LEN + 1];
-		char confirm[PINDIALOG_PIN_LEN + 1];
-		const char* error = NULL;
-		while (1) {
-			if (!run_pin_dialog("Set Settings PIN", error, pin))
-				return; // cancelled: leave Simple Mode off
-			if (!run_pin_dialog("Confirm Settings PIN", NULL, confirm))
-				return;
-			if (strcmp(pin, confirm) == 0)
-				break;
-			error = "PINs did not match. Try again.";
-		}
-		putFile((char*)SIMPLE_MODE_PATH, pin);
-	} else {
-		unlink(SIMPLE_MODE_PATH);
-	}
-}
-static void reset_simple_mode(void) {
-	unlink(SIMPLE_MODE_PATH);
-}
 
 // ============================================
 // F1/F2 key tool shortcuts (Brick family)
@@ -2009,7 +1933,7 @@ static void build_menu_tree(const DeviceInfo* dev) {
 	menu_style_items[MENU_CAT_CONSOLES] = &layouts_items[idx];
 	layouts_items[idx++] = (SettingItem)ITEM_CYCLE_INIT(
 		"Consoles layout", "How the Consoles tab draws.",
-		menu_style_labels, MENUSTYLE_MAIN_COUNT, menu_style_values, get_menu_style_consoles, set_menu_style_consoles, reset_menu_style_consoles);
+		console_style_labels, CONSOLE_STYLE_COUNT, console_style_values, get_menu_style_consoles, set_menu_style_consoles, reset_menu_style_consoles);
 	LAYOUTS_ORIENT_ROW(menu_orient_items[MENU_CAT_CONSOLES], "Consoles orientation",
 					   "Whether the Consoles carousel runs across or down.",
 					   get_menu_orient_consoles, set_menu_orient_consoles, reset_menu_orient_consoles);
@@ -2044,7 +1968,7 @@ static void build_menu_tree(const DeviceInfo* dev) {
 
 	layouts_items[idx++] = (SettingItem)ITEM_CYCLE_INIT(
 		"Game lists layout", "How a console's or collection's games draw.",
-		game_list_style_labels, MENUSTYLE_GAMELIST_COUNT, game_list_style_values, get_game_list_style, set_game_list_style, reset_game_list_style);
+		game_list_style_labels, GAME_LIST_STYLE_COUNT, game_list_style_values, get_game_list_style, set_game_list_style, reset_game_list_style);
 	LAYOUTS_ORIENT_ROW(game_list_orient_item, "Game lists orientation",
 					   "Whether a game list's carousel or backdrop runs across or down.",
 					   get_game_list_orient, set_game_list_orient, reset_game_list_orient);
@@ -2387,18 +2311,6 @@ static void build_menu_tree(const DeviceInfo* dev) {
 	init_page(&notify_page, "Settings | Notifications", notify_items, idx, 0);
 
 	// ============================
-	// Simple Mode page
-	// ============================
-	idx = 0;
-	simple_mode_items[idx++] = (SettingItem)ITEM_CYCLE_INIT(
-		"Simple Mode", "Enable simplified menu for children or casual users.",
-		on_off_labels, 2, on_off_values, get_simple_mode, set_simple_mode, reset_simple_mode);
-	simple_mode_items[idx++] = (SettingItem)ITEM_BUTTON_INIT(
-		"How it works", "Explains Simple Mode and PIN recovery.",
-		show_simple_mode_help);
-	init_page(&simple_mode_page, "Settings | Simple Mode", simple_mode_items, idx, 0);
-
-	// ============================
 	// About page
 	// ============================
 	idx = 0;
@@ -2470,22 +2382,13 @@ static void build_menu_tree(const DeviceInfo* dev) {
 			"FN switch", "FN switch settings", &fn_switch_page);
 	}
 
-	// Hidden in simple mode along with the shortcuts themselves (they launch
-	// tools, which simple mode hides from the main menu).
-	if (has_fn_keys(dev) && !get_simple_mode()) {
+	if (has_fn_keys(dev)) {
 		main_items[idx++] = (SettingItem)ITEM_SUBMENU_INIT(
 			"F1 / F2 keys", "Launch a tool with the F1/F2 keys", &fn_keys_page);
 	}
 
-	// Hidden in simple mode, like the in-game Options it replaces there: a
-	// shortcut bound to A could reset or quit every game.
-	if (!get_simple_mode()) {
-		main_items[idx++] = (SettingItem)ITEM_SUBMENU_INIT(
-			"Emulator Shortcuts", "In-game shortcuts for every console", &shortcuts_page);
-	}
-
 	main_items[idx++] = (SettingItem)ITEM_SUBMENU_INIT(
-		"Simple Mode", "Simplified menu for children", &simple_mode_page);
+		"Emulator Shortcuts", "In-game shortcuts for every console", &shortcuts_page);
 
 	main_items[idx++] = (SettingItem)ITEM_SUBMENU_INIT(
 		"System", "", &system_page);
@@ -2511,7 +2414,7 @@ static void build_menu_tree(const DeviceInfo* dev) {
 	{
 		SettingsPage* pages[] = {
 			&appearance_page, &layouts_page, &display_page, &system_page,
-			&fn_switch_page, &notify_page, &simple_mode_page, &shortcuts_page, NULL};
+			&fn_switch_page, &notify_page, &shortcuts_page, NULL};
 		for (int p = 0; pages[p]; p++) {
 			for (int i = 0; i < pages[p]->item_count; i++) {
 				settings_item_sync(&pages[p]->items[i]);

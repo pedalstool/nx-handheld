@@ -2622,7 +2622,7 @@ static void activate(bool* dirty) {
 			GameList_openTab(MENU_TAB_CONSOLES, dirty); // Pick a game
 		break;
 	case HOME_TILE_TOOL:
-		if (e && GameList_settingsPinAllows(e)) { // simple mode's Settings PIN
+		if (e) {
 			MenuTabs_markHomeLaunch();
 			Entry_open(e);
 		}

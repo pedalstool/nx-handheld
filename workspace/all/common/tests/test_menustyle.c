@@ -37,7 +37,9 @@ static void stored_values_win(void) {
 	assert(loadGameList(MENU_STYLE_GRID) == MENU_STYLE_GRID);
 	assert(loadGameList(MENU_STYLE_CAROUSEL) == MENU_STYLE_CAROUSEL);
 	assert(loadMain(MENU_STYLE_MINIMAL) == MENU_STYLE_MINIMAL);
-	assert(loadGameList(MENU_STYLE_MINIMAL) == MENU_STYLE_MINIMAL);
+	assert(MenuStyle_consoles(MENU_STYLE_MINIMAL) == MENU_STYLE_CAROUSEL);
+	assert(MenuStyle_consoles(MENU_STYLE_GRID) == MENU_STYLE_GRID);
+	assert(loadGameList(MENU_STYLE_MINIMAL) == MENU_STYLE_CAROUSEL);
 }
 
 static void main_menu_backdrop_reads_as_carousel(void) {
@@ -98,8 +100,9 @@ static void main_menu_orientation_by_style(void) {
 	assert(!MenuStyle_mainMenuHasOrient(MENU_STYLE_LIST));
 	assert(!MenuStyle_mainMenuHasOrient(MENU_STYLE_GRID));
 	assert(!MenuStyle_mainMenuHasOrient(MENU_STYLE_MINIMAL));
-	assert(!MenuStyle_gameListHasOrient(MENU_STYLE_MINIMAL));
-	assert(MenuStyle_gameListOrient(MENU_STYLE_MINIMAL, MENU_ORIENT_VERTICAL) == MENU_ORIENT_HORIZONTAL);
+	// a stored game-list Minimal reads as Carousel, so its orientation applies
+	assert(MenuStyle_gameListHasOrient(MENU_STYLE_MINIMAL));
+	assert(MenuStyle_gameListOrient(MENU_STYLE_MINIMAL, MENU_ORIENT_VERTICAL) == MENU_ORIENT_VERTICAL);
 	assert(MenuStyle_mainMenuHasOrient(MENU_STYLE_CAROUSEL));
 	assert(MenuStyle_mainMenuHasOrient(MENU_STYLE_BACKDROP)); // a stored main-menu Backdrop reads as Carousel
 	assert(MenuStyle_mainMenuHasOrient(99));				  // out of range reads as Carousel (the default)

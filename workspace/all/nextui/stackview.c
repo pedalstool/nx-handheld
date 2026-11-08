@@ -466,6 +466,23 @@ void StackView_render(SDL_Surface* screen, int lastScreen) {
 	bool sprites = (!gameStack(kind) && !ContextMenu_isOpen()) || (gameStack(kind) && RowView_gameSprites());
 	RowView_beginSprites(sprites);
 
+	// Consoles: only the selected logo, held in the centre. The stack used to keep the previous and next
+	// consoles on screen above and below it.
+	if (kind == STACK_MAIN_CONSOLES && sel >= 0 && sel < n) {
+		Entry* e = top->entries->items[sel];
+		TileKind k = RowView_kindFor(sel, e);
+		StackItem it = {0, 1, 1, 0, 0, true};
+		if (k == TILE_LOGO) {
+			StackPad p = padFor(&sg, e, k);
+			if (p.id) {
+				float pd = pxPerDp();
+				RowView_drawPad(screen, e, k, Stack_round(p.box.w * pd), Stack_round(p.box.h * pd), sg.g.cx,
+								itemCy(&sg, &it) + Stack_round(p.off * it.scale * pd), it.scale, 0);
+			}
+		}
+		drawItem(screen, &sg, e, k, &it, true);
+	}
+
 	// far to near (the largest d first), so the nearer item lands on top where a grown name reaches a neighbour
 	int first, last;
 	visibleRange(&sg, n, pos, &first, &last);
@@ -483,19 +500,13 @@ void StackView_render(SDL_Surface* screen, int lastScreen) {
 	}
 	for (int j = 0; j < count; j++) {
 		int i = order[j];
+		if (kind == STACK_MAIN_CONSOLES)
+			continue;
 		StackItem it = Stack_item(&sg.ss, (float)i, pos);
 		if (!it.visible)
 			continue;
 		Entry* e = top->entries->items[i];
 		TileKind k = RowView_kindFor(i, e);
-		if (kind == STACK_MAIN_CONSOLES && it.d < 1.0f) { // the focused console's controller, under its logo
-			StackPad p = padFor(&sg, e, k);
-			if (p.id) {
-				float pd = pxPerDp();
-				RowView_drawPad(screen, e, k, Stack_round(p.box.w * pd), Stack_round(p.box.h * pd), sg.g.cx,
-								itemCy(&sg, &it) + Stack_round(p.off * it.scale * pd), it.scale, it.d);
-			}
-		}
 		drawItem(screen, &sg, e, k, &it, i == sel);
 	}
 

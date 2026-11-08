@@ -24,7 +24,6 @@
 #include "ui_accent.h"
 #include "ui_list.h"
 #include "ui_listdialog.h"
-#include "ui_pindialog.h"
 #include "ui_text_sizes.h"
 #include "utils.h"
 #include "wifi.h"
@@ -69,7 +68,6 @@
 #include <time.h>
 #include <unistd.h>
 
-static bool gl_simple_mode = false;
 
 static ScrollTextState list_scroll = {0};
 // Selection-pill slide animation: the highlight glides to the selected row
@@ -132,10 +130,6 @@ void GameList_invalidateBackground(void) {
 	folderBgPath[0] = '\0';
 	bgLastType = -1;
 	bgResolveValid = false;
-}
-
-void GameList_init(bool simple_mode) {
-	gl_simple_mode = simple_mode;
 }
 
 bool GameList_scrollBusy(void) {
@@ -639,44 +633,6 @@ static bool confirmModal(const char* title, const char* subtitle) {
 	return UI_confirmModal(screen, title, subtitle, NULL, true, false);
 }
 
-// Simple mode: launching Settings requires the parent PIN (when one is set).
-// Re-prompts on a wrong PIN, B cancels. Returns true when launch may proceed.
-static bool settingsPinAllows(Entry* entry) {
-	if (!gl_simple_mode || !entry || entry->type != ENTRY_PAK)
-		return true;
-
-	char settings_path[MAX_PATH];
-	snprintf(settings_path, sizeof(settings_path), "%s/Tools/Settings.pak", PAKS_PATH); // as getSimpleTools lists it
-	if (!exists(settings_path))
-		snprintf(settings_path, sizeof(settings_path), "%s/Settings.pak", TOOLS_PATH);
-	if (!exactMatch(entry->path, settings_path))
-		return true;
-
-	char pin[PINDIALOG_PIN_LEN + 1];
-	if (!SimpleMode_readPin(pin))
-		return true; // legacy flag file without a PIN: ungated
-
-	bool allowed = false;
-	const char* error = NULL;
-	GFX_clearLayers(LAYER_ALL);
-	while (!allowed) {
-		char entered[PINDIALOG_PIN_LEN + 1];
-		bool confirmed = UI_pinModal(screen, "Enter Settings PIN", error, entered, NULL, false, false);
-		if (!confirmed)
-			break;
-		if (strcmp(entered, pin) == 0)
-			allowed = true;
-		else
-			error = "Wrong PIN. Try again."; // re-init also resets digits to 0
-	}
-	GFX_clearLayers(LAYER_ALL);
-	return allowed;
-}
-
-bool GameList_settingsPinAllows(Entry* entry) {
-	return settingsPinAllows(entry);
-}
-
 typedef struct {
 	int chosen;
 } PickCollectionCtx;
@@ -864,11 +820,10 @@ static bool doRename(Entry* entry, int sel) {
 // Collections: Rename and Delete (spec 2026-10-01-menu-sp7-page-titles-design.md, "Collections")
 
 // A row of the Collections list: a Collections/<name>.txt on the Collections tab, or in its list pushed over a tab
-// while the tab is hidden. Simple mode never renames or deletes one (kids can't remove the curated collections), so
-// its menu items, hint and actions all key off this.
+// while the tab is hidden. Its menu items, hint and actions all key off this.
 static bool isCollectionRow(Entry* entry) {
 	size_t n = strlen(COLLECTIONS_PATH);
-	return !gl_simple_mode && entry && GameList_lookTab() == MENU_TAB_COLLECTIONS && exactMatch(top->path, COLLECTIONS_PATH) && entry->type == ENTRY_DIR &&
+	return entry && GameList_lookTab() == MENU_TAB_COLLECTIONS && exactMatch(top->path, COLLECTIONS_PATH) && entry->type == ENTRY_DIR &&
 		   suffixMatch(".txt", entry->path) && strncmp(entry->path, COLLECTIONS_PATH, n) == 0 &&
 		   entry->path[n] == '/' && !strchr(entry->path + n + 1, '/');
 }
@@ -1834,9 +1789,6 @@ static void romItems(Entry* entry, ContextMenuItem* items, int* idx) {
 			addItem(items, idx, label, 35);
 		}
 	}
-	// simple mode: kids can't pin, delete, rename, collect or change a game's options (issue #265)
-	if (gl_simple_mode)
-		return;
 	if (canPinEntry(entry)) {
 		if (Shortcuts_exists(entry->path + strlen(SDCARD_PATH)))
 			addItem(items, idx, "Unpin Item", 31);
@@ -1894,12 +1846,10 @@ void GameList_openContextMenuFor(Entry* entry, bool is_pin, bool is_continue) {
 	int idx = 0;
 	char game_file[MAX_PATH];
 	if (entry->type == ENTRY_PAK) {
-		// simple mode: kids can't unpin the curated shortcuts (as on the Tools tab)
-		if (!gl_simple_mode)
-			toolItems(entry, items, &idx);
+		toolItems(entry, items, &idx);
 	} else if (entry->type == ENTRY_ROM || entryFolderGame(entry, game_file)) {
 		romItems(entry, items, &idx);
-	} else if (is_pin && !gl_simple_mode && Shortcuts_exists(entry->path + strlen(SDCARD_PATH))) {
+	} else if (is_pin && Shortcuts_exists(entry->path + strlen(SDCARD_PATH))) {
 		addItem(items, &idx, "Unpin", 3); // a legacy pinned folder
 	}
 	rootItems(items, &idx);
@@ -1917,15 +1867,12 @@ void GameList_openContextMenuFor(Entry* entry, bool is_pin, bool is_continue) {
 // A on the selection: opens it (a folder slides in, a game starts).
 static void openSelected(GameListResult* result, bool* dirty) {
 	Entry* entry = top->entries->items[top->selected];
-	if (settingsPinAllows(entry)) {
-		// snapshot before Entry_open: its directory fall-through can rebuild
-		// the stack and free entry (same defect the Y / case-35 sites guard)
-		bool was_dir = entry->type == ENTRY_DIR;
-		Entry_open(entry);
-		if (was_dir && !startgame) {
-			result->animdir = SLIDE_LEFT;
-		}
-	}
+	// snapshot before Entry_open: its directory fall-through can rebuild
+	// the stack and free entry (same defect the Y / case-35 sites guard)
+	bool was_dir = entry->type == ENTRY_DIR;
+	Entry_open(entry);
+	if (was_dir && !startgame)
+		result->animdir = SLIDE_LEFT;
 	*dirty = true;
 
 	if (top->entries->count > 0)
@@ -2060,21 +2007,17 @@ GameListResult GameList_handleInput(unsigned long now, int currentScreen,
 		ContextMenuItem items[CONTEXTMENU_MAX_ITEMS];
 
 		if (Shortcuts_isInToolsFolder(top->path)) {
-			// Tools tab or Tools listing. Simple mode's Tools tab (Settings
-			// only) gets no menu: kids can't unpin the curated shortcuts.
-			if (entry && !gl_simple_mode)
+			if (entry)
 				toolItems(entry, items, &idx);
 		} else if (GameList_lookTab() >= 0) {
 			// Root menu (Consoles or Collections tab, or its list pushed over a tab
 			// while the tab is hidden; Home handles its own MENU)
-			// A collection renames or deletes. Pinned rows unpin in place; hidden
-			// in simple mode so kids can't remove the curated shortcuts.
+			// A collection renames or deletes. Pinned rows unpin in place.
 			if (isCollectionRow(entry)) {
 				addItem(items, &idx, "Rename", 40);
 				addItem(items, &idx, "Delete", 41);
 			}
-			if (!gl_simple_mode && entry &&
-				Shortcuts_exists(entry->path + strlen(SDCARD_PATH)))
+			if (entry && Shortcuts_exists(entry->path + strlen(SDCARD_PATH)))
 				addItem(items, &idx, "Unpin", 3);
 			rootItems(items, &idx);
 		} else if (entry) {
@@ -2097,8 +2040,7 @@ GameListResult GameList_handleInput(unsigned long now, int currentScreen,
 		GFX_clearLayers(LAYER_SCROLLTEXT);
 		ScrollText_clear(&list_scroll);
 		return result;
-	} else if (HAS_FN_KEYS && !gl_simple_mode &&
-			   (PAD_justPressed(BTN_FN1) || PAD_justPressed(BTN_FN2))) {
+	} else if (HAS_FN_KEYS && (PAD_justPressed(BTN_FN1) || PAD_justPressed(BTN_FN2))) {
 		// F1/F2 tool shortcuts (Brick family): launch the assigned tool pak
 		// from anywhere in normal browsing. Unassigned key or a tool that got
 		// uninstalled since it was assigned = no-op.

@@ -34,20 +34,6 @@ static void home_always_first_and_visible(void) {
 		   out[3] == MENU_TAB_TOOLS);
 }
 
-static void visible_simple_mode_tools_is_settings(void) {
-	MenuTabId t[MENU_TAB_COUNT];
-	MenuTabInputs in = all_on();
-	in.simple_mode = true;
-	in.show_tools = false; // ignored in simple mode
-	in.has_tools = false;
-	in.has_settings = true;
-	int n = MenuTabs_visible(&in, t);
-	assert(t[n - 1] == MENU_TAB_TOOLS);
-	in.has_settings = false;
-	n = MenuTabs_visible(&in, t);
-	assert(t[n - 1] != MENU_TAB_TOOLS);
-}
-
 static void wrap_steps_both_ways(void) {
 	assert(MenuTabs_wrap(4, 0, -1) == 3);
 	assert(MenuTabs_wrap(4, 3, 1) == 0);
@@ -371,7 +357,6 @@ static void pick_initial_without_home_opens_first_tab(void) {
 int main(void) {
 	visible_fixed_order_and_toggles();
 	home_always_first_and_visible();
-	visible_simple_mode_tools_is_settings();
 	wrap_steps_both_ways();
 	resolve_vanished_tab_picks_next_then_last();
 	home_survives_no_pins();

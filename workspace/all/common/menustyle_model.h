@@ -13,10 +13,12 @@ enum { MENU_STYLE_LIST = 0,
 	   MENU_STYLE_MINIMAL,	// just the names (Home's Minimal, minview.c)
 	   MENU_STYLE_COUNT };
 
-// Main-menu tabs (Consoles, Collections, Tools) choose List, Grid, Carousel or Minimal (the Layouts row's options).
+// Collections and Tools choose List, Grid, Carousel or Minimal. Consoles chooses the first three
+// (MenuStyle_consoles). The count is those four stored choices.
 #define MENUSTYLE_MAIN_COUNT 4
 #define MENUSTYLE_MAIN_DEFAULT MENU_STYLE_CAROUSEL
-// Game lists choose List, Grid, Carousel, Backdrop or Minimal.
+// Game lists choose List, Grid, Carousel or Backdrop. Minimal remains a stored value so an old file still
+// loads; MenuStyle_gameList reads it as Carousel.
 #define MENUSTYLE_GAMELIST_COUNT MENU_STYLE_COUNT
 #define MENUSTYLE_GAMELIST_DEFAULT MENU_STYLE_CAROUSEL
 
@@ -35,6 +37,13 @@ static inline int MenuStyle_mainMenu(int stored) {
 	return stored;
 }
 
+// Consoles no longer offers Minimal. A stored Minimal reads as Carousel. Collections and Tools still use
+// MenuStyle_mainMenu, which keeps Minimal.
+static inline int MenuStyle_consoles(int stored) {
+	int style = MenuStyle_mainMenu(stored);
+	return style == MENU_STYLE_MINIMAL ? MENUSTYLE_MAIN_DEFAULT : style;
+}
+
 // The value to store for game lists: an out-of-range value becomes the default.
 static inline int MenuStyle_storeGameList(int style) {
 	if (style < MENU_STYLE_LIST || style >= MENUSTYLE_GAMELIST_COUNT)
@@ -42,9 +51,11 @@ static inline int MenuStyle_storeGameList(int style) {
 	return style;
 }
 
-// How a stored game list value reads: all five styles stay, an out-of-range value reads as the default.
+// How a stored game list value reads. Minimal is no longer a game-list layout, so a stored Minimal reads as
+// Carousel. Anything else out of range does too.
 static inline int MenuStyle_gameList(int stored) {
-	return MenuStyle_storeGameList(stored);
+	int style = MenuStyle_storeGameList(stored);
+	return style == MENU_STYLE_MINIMAL ? MENUSTYLE_GAMELIST_DEFAULT : style;
 }
 
 // Orientation of a Carousel (main-menu tab) or a Carousel / Backdrop (game lists). Stored in minuisettings.txt, so

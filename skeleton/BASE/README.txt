@@ -125,11 +125,6 @@ Certain (unsupported arcade) cores require roms to use arcane file names. You ca
   sf2.zip	Street Fighter II
 
 ----------------------------------------
-Simple mode
-
-Not simple enough for you (or maybe your kids)? NX Redux has a simple mode that hides the Tools folder and replaces Options in the in-game menu with Reset. Perfect for handing off to littles (and olds too I guess). Just create an empty file named "enable-simple-mode" (no extension) in "/.userdata/shared/".
-
-----------------------------------------
 Advanced
 
 NX Redux can automatically run a user-authored shell script on boot. Just place a file named "auto.sh" in "/.userdata/<DEVICE>/". If you're on Windows, make sure your text editor uses Unix line-endings (eg. `\n`), these devices usually choke on Windows line-endings (eg. `\r\n`).

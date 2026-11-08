@@ -237,24 +237,6 @@ static void test_time(void) {
 	assert(strcmp(buf, "1:01:01") == 0);
 }
 
-static void test_simple_mode_pin(void) {
-	sh("mkdir -p " SHARED_USERDATA_PATH);
-	char pin[5] = "xxxx";
-	unlink(SIMPLE_MODE_PATH);
-	assert(!SimpleMode_readPin(pin));
-	put(SIMPLE_MODE_PATH, "1234\r\n");
-	assert(SimpleMode_readPin(pin) && strcmp(pin, "1234") == 0);
-	assert(SimpleMode_readPin(NULL));
-	put(SIMPLE_MODE_PATH, "0987 \t");
-	assert(SimpleMode_readPin(pin) && strcmp(pin, "0987") == 0);
-	const char* bad[] = {"123", "12a4", "12345", " 1234", "", "12 4"};
-	for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
-		put(SIMPLE_MODE_PATH, bad[i]);
-		assert(!SimpleMode_readPin(pin));
-	}
-	unlink(SIMPLE_MODE_PATH);
-}
-
 static void test_media_art_path(void) {
 	char out[MAX_PATH];
 	ROM_mediaArtVariantPath("/Roms/GBA/Game.gba", "screenshot", out, sizeof(out));
@@ -286,7 +268,6 @@ int main(void) {
 	test_path_relative();
 	test_m3u();
 	test_time();
-	test_simple_mode_pin();
 	sh("rm -rf " SDCARD_PATH);
 	printf("test_utils_names: OK\n");
 	return 0;

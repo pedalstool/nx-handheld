@@ -67,7 +67,6 @@ bool quit = false;
 bool startgame = false;
 ResumeState resume = {0};
 RestoreState restore = {.depth = -1, .relative = -1};
-static bool simple_mode = false;
 static int animationdirection = 0;
 
 static void Menu_init(void) {
@@ -83,8 +82,6 @@ static void Menu_init(void) {
 		getFile(LAST_PATH, last_path, sizeof(last_path));
 	MenuTabs_openRoot(MenuTabs_initialTab(last_path));
 	loadLast(); // restore state when available
-
-	GameList_init(simple_mode);
 }
 // The last frame drew its moving pictures as GPU sprites (the Consoles carousel, the Grid) and nothing into the
 // screen's body: the body is still black, and only the bars' rows changed.
@@ -216,9 +213,6 @@ int main(int argc, char* argv[]) {
 	if (!cpuBootDone())
 		startCPUPolicy(false);
 
-	simple_mode = exists(SIMPLE_MODE_PATH);
-	Content_setSimpleMode(simple_mode);
-
 	bootStamp("start");
 	InitSettings();
 
@@ -249,7 +243,7 @@ int main(int argc, char* argv[]) {
 	PAD_init();
 	VIB_init();
 	PWR_init();
-	if (!HAS_POWER_BUTTON && !simple_mode)
+	if (!HAS_POWER_BUTTON)
 		PWR_disableSleep();
 
 	initImageLoaderPool();

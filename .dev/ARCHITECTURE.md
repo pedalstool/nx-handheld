@@ -105,11 +105,6 @@ brightness directly is futile: the next app launch re-applies
 
 - **Collections**: plain `.txt` under `/mnt/SDCARD/Collections/`, one
   SD-relative path per line (`/Roms/GBA/Game.gba`).
-- **Simple mode + PIN**: the flag file
-  `.userdata/shared/enable-simple-mode` exists ⇒ simple mode; its *content*
-  is the 4-digit Settings PIN (empty/malformed = ungated; delete the file
-  from the SD as recovery). Plaintext by design — a convenience gate, not
-  security.
 - **ROM↔pak mapping**: the `(TAG)` suffix of the ROM's parent folder picks
   `<TAG>.pak` ([PAKS.md](PAKS.md)); `map.txt` in a ROM folder aliases
   filenames to display names (filename-keyed, tab-separated).

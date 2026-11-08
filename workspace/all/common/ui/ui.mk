@@ -27,7 +27,6 @@ UI_COMPONENT_SRCS = \
 	$(UI_DIR)/ui_splash.c \
 	$(UI_DIR)/ui_downloadprogress.c \
 	$(UI_DIR)/ui_emptystate.c \
-	$(UI_DIR)/ui_pindialog.c \
 	$(UI_DIR)/ui_ease.c \
 	$(UI_DIR)/ui_accent.c \
 	$(UI_DIR)/ui_fade.c
