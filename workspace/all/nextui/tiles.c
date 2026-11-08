@@ -1097,7 +1097,7 @@ const char* Tiles_toolIcon(const char* pak_name) {
 		{"Game Tracker", "menu_icon_gametime.png"},
 		{"Settings", "menu_icon_settings.png"},
 		{"Emulator Settings", "menu_icon_emulator.png"},
-		{"Files", "menu_icon_files.png"},
+		{"Save Sync", "menu_icon_savesync.png"},
 		{"Xtras", "menu_icon_xtras.png"},
 		{"PortMaster", "menu_icon_portmaster.png"},
 		{"Cheat Database", "menu_icon_cheats.png"},

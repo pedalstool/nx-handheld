@@ -240,7 +240,7 @@ static void test_shortcuts(void) {
 	assert(Shortcuts_getCount() == count);
 	Shortcuts_quit();
 
-	assert(strcmp(Shortcuts_getPakBasename("/Tools/tg5040/Files.pak"), "Files") == 0);
+	assert(strcmp(Shortcuts_getPakBasename("/Tools/tg5040/Settings.pak"), "Settings") == 0);
 	assert(strcmp(Shortcuts_getPakBasename("Plain"), "Plain") == 0);
 	assert(Shortcuts_isInToolsFolder(SDCARD_PATH "/Tools/x.pak") && !Shortcuts_isInToolsFolder(SDCARD_PATH GB));
 }

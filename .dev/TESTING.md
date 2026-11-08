@@ -155,7 +155,7 @@ sleep; poke a key every ~15 s during long waits.
 ## CPU testing & profiling
 
 **Trap first:** each pak's `launch.sh` sets CPU clocks on entry, and manual /
-killed runs may leave caps behind (e.g. the tg5050 Files pak takes cpu4
+killed runs may leave caps behind (e.g. a Tools pak takes cpu4
 offline and caps cpu0 at 1032 MHz). Check and reset `scaling_max_freq` before benchmarking. After a
 normal app exit, `MinUI.pak/launch.sh` restores the default state
 ([DEVICES.md](DEVICES.md) has the tables).

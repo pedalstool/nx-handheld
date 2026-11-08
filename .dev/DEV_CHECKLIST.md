@@ -262,7 +262,7 @@ little cluster, versus upstream NextUI's "auto" (408-1800 / 408-1320).
   post-pak restore block leaves it online; the relaunch offlines it again at
   its first frame. minarch's menu (`CPU_SPEED_MENU`) does NOT offline anything.
 - tg5050 Tools paks that used to cap cpu4 at 408 (Settings, Emulator Settings,
-  Game Tracker, Files, Device Sync, Artwork Manager, Xtras, Music Player) plus
+  Game Tracker, Device Sync, Artwork Manager, Xtras, Music Player) plus
   RetroAchievements now take cpu4 offline themselves right after launch.sh
   hands it over online — same performance (a 408 MHz big core added nothing),
   cluster gated. Media Player keeps the big cluster (video decode). Verified:

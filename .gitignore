@@ -34,13 +34,9 @@ libchdr
 **/other/sdl2
 **/other/sdl12-compat
 **/other/unzip60
-**/other/DinguxCommander
-**/other/DinguxCommander-sdl2
-**/other/NextCommander
 **/other/sdl2-drastic/SDL_drastic
 **/other/sdl2-drastic/extra-deps
 **/other/sdl2-drastic/output
-**/other/351files
 **/other/fbset
 **/other/mkbootimg
 **/other/rsce-go

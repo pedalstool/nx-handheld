@@ -209,7 +209,6 @@ at once — the Settings app's own hint bar included (`PAD_reloadHintLabels`).
 | mupen64plus-next (N64.pak) | a minarch libretro core since the move off the standalone mupen64plus: handled by minarch like the other cores |
 | flycast (DC.pak) | a minarch libretro core since the move off standalone flycast: handled by minarch like the other cores. flycast's RetroPad mapping is positional (RetroPad B / bottom = DC A, A / right = B, Y / left = X, X / top = Y; Select = Coin on arcade), so the pak ships no binds |
 | PortMaster ports | `ports_launch.sh` copies `gamecontrollerdb_<layout>.txt`; the pak's own toggle is gone |
-| Files (NextCommander) | `launch.sh` sources the helper and, under Xbox, feeds NextCommander a `/tmp/files.cfg` = platform cfg + `key_open=0 key_parent=1 key_operation=2 key_system=3` (physical joystick indices; the binary's compiled defaults are Nintendo). The patched binary maps MENU to the *configured* system key so it keeps opening the system menu |
 | Stock OSD | `trimui_osdd.xbox` (see OSD.md) |
 
 Bind files on disk (`bind A Button = A`) keep logical labels; only display

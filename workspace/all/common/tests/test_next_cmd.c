@@ -52,7 +52,7 @@ int main(void) {
 	check("'/x/l.sh' '/r/Rock'\\'''", "/r/Rock'");
 
 	// A pak launch has a single word: the old reader returned it too.
-	check("'/mnt/SDCARD/Tools/tg5040/Files.pak/launch.sh'", "/mnt/SDCARD/Tools/tg5040/Files.pak/launch.sh");
+	check("'/mnt/SDCARD/Tools/tg5040/Settings.pak/launch.sh'", "/mnt/SDCARD/Tools/tg5040/Settings.pak/launch.sh");
 	check("'/mnt/SDCARD/Tools/tg5040/Emulator Settings.pak/launch.sh'",
 		  "/mnt/SDCARD/Tools/tg5040/Emulator Settings.pak/launch.sh");
 

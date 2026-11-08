@@ -86,10 +86,10 @@ to
 
 # Brightness and Volume
 
-Some binaries insist on resetting brightness (eg. DinguxCommander on the 40xxH stock firmware) or volume (eg. ppssppSDL everywhere) on every launch. To keep this in sync with NextUI's global settings there's syncsettings.elf. It waits one second then restores NextUI's current brightness and volume settings. In most cases you can just launch it as a daemon before launching the binary:
+Some binaries insist on resetting brightness or volume (eg. ppssppSDL) on every launch. To keep this in sync with NextUI's global settings there's syncsettings.elf. It waits one second then restores NextUI's current brightness and volume settings. In most cases you can just launch it as a daemon before launching the binary:
 
 	syncsettings.elf &
-	./DinguxCommander
+	./PPSSPPSDL
 
 But if a binary takes more than one second to initialize you might need to just let it run in a loop the entire time the binary is running:
 

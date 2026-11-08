@@ -5,8 +5,7 @@
 # lives in $SYSTEM_PATH/bin — on PATH for every pak). Anything unexpected
 # (nextval missing, empty output) means nintendo, the physical layout.
 # Consumers: DraStic's SDL hook (NDS.pak), PortMaster's gamecontrollerdb
-# selection and pugwash pad map, Gen1recomp, the Files pak (NextCommander key
-# overrides).
+# selection and pugwash pad map, and Gen1recomp.
 # The `|| _nxbl=` keeps a failed command substitution (nextval missing or
 # crashing) from aborting a consumer sourced under `set -e`/`pipefail`.
 _nxbl=$(nextval.elf buttonlayout 2>/dev/null | sed -n 's/.*"buttonlayout": \([0-9]*\).*/\1/p') || _nxbl=

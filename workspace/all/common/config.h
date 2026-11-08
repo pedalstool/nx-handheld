@@ -178,7 +178,7 @@ typedef struct
 	bool gameSwitcherResumableOnly;
 
 	// F1/F2 tool shortcuts (Brick family): SD-relative path of the tool pak
-	// the key launches from the menus ("" = disabled), e.g. "/Tools/Files.pak"
+	// the key launches from the menus ("" = disabled), e.g. "/Tools/Settings.pak"
 	char fn1Tool[256];
 	char fn2Tool[256];
 
