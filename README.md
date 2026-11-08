@@ -6,6 +6,7 @@ Brick / Brick Hammer fork of [NX Redux](https://github.com/nx-redux/nx-handheld)
 
 - **Brick / Hammer only** — same `tg5040` `DEVICE=brick` build; Brick Pro, Smart Pro, and Smart Pro S are not supported
 - **No media apps** — Music Player, Media Player, Image Viewer, and the OSD music widget are removed
+- **No Device Sync** — the tool that copies saves, ROMs, and BIOS between devices is not included
 - **Console text color** — Settings includes console title / text color (from console-text-color v6)
 - **Faster console backgrounds** — screen-sized backgrounds are cached and shared (no copy on revisit); neighboring consoles prefetch while idle so browsing the Consoles list stays responsive. Returning to a console draws that background again
 - **Console transitions** — cycling through systems eases the full-screen background from one console into the next, in time with the selection. It follows the menu animations setting
@@ -19,6 +20,14 @@ Brick / Brick Hammer fork of [NX Redux](https://github.com/nx-redux/nx-handheld)
 Download **`NXRedux-<tag>-brick.zip`** from [Releases](https://github.com/pedalstool/nx-handheld/releases). That zip is both the full SD install and the OTA package (complete system zip — required by the boot installer).
 
 ### Changelog
+
+**v1.1.6**
+
+- Device Sync is no longer included.
+
+**v1.1.5**
+
+- Screenshot and screen recording are gone.
 
 **v1.1.4**
 

@@ -1,7 +1,7 @@
 rsync
 Source: https://rsync.samba.org/ (git: https://github.com/RsyncProject/rsync)
 Version: 3.4.1 (built from the release tarball by workspace/all/prebuilts/rsync.sh). COPYING fetched at tag v3.2.0 (unchanged GPL-3.0 text)
-Shipped as: .system/shared/bin/rsync (statically linked, built at release time); used by Device Sync / netplay save sync
+Shipped as: .system/shared/bin/rsync (statically linked, built at release time); used by the netplay wizard's save sync
 License: GPL-3.0-or-later
 
 ==== COPYING (tag v3.2.0) ====

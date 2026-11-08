@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# Build the rsync that ships in SYSTEM/shared/bin. Device Sync
-# (all/sync/sync.c) and the netplay wizard's save pull (all/netplay-wizard/
-# wizard_sync.c) run it as a LAN daemon and as a client.
+# Build the rsync that ships in SYSTEM/shared/bin. The netplay wizard's save
+# pull (all/netplay-wizard/wizard_sync.c) runs it as a LAN daemon and as a
+# client.
 #
 # Shared across platforms, so it is built once with the tg5040 toolchain; any
 # other PLATFORM is refused. Linked dynamically against the device's glibc

@@ -13,7 +13,7 @@ PREFACE
 
 NX Redux has two essential parts: an installer/updater zip archive named "MinUI.zip" and a bootstrap folder named "trimui".
 
-NX Redux supports the Trimui devices: Brick, Brick Pro, Smart Pro, and Smart Pro S. SD cards are built per device and are not swappable between models — use the Device Sync tool to move your data between devices.
+NX Redux supports the Trimui devices: Brick, Brick Pro, Smart Pro, and Smart Pro S. SD cards are built per device and are not swappable between models.
 
 The SD card should be a reputable brand and freshly formatted as exFAT (preferred).
 
