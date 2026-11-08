@@ -14,36 +14,6 @@ Brick / Brick Hammer fork of [NX Redux](https://github.com/nx-redux/nx-handheld)
 - **Power Off in MENU menu** — MENU context menu includes Power Off (alongside Refresh Roms / Tools)
 - **Updates from this fork** — in-device updater checks `pedalstool/nx-handheld` releases
 
-## Releases
-
-Download **`NXRedux-<tag>-brick.zip`** from [Releases](https://github.com/pedalstool/nx-handheld/releases). That zip is both the full SD install and the OTA package (complete system zip — required by the boot installer).
-
-### Changelog
-
-**v1.1.3**
-
-- Console backgrounds ease into the next picture while you cycle consoles.
-
-**v1.1.2**
-
-- Sleeping while plugged in no longer hangs. The power button wakes the Brick again. A full battery on the charger used to enter deep sleep, and that sleep does not resume.
-
-**v1.1.1**
-
-- Console backgrounds show again when you return to a console. A failed background load no longer blocks later ones.
-- Nearby console backgrounds prefetch while you browse. Power Off is in the MENU menu.
-- The update zip is a full system package. v1.1.0 shipped a partial zip that could leave the Brick unable to boot.
-- The unused charging-battery graphic is gone. With battery percentage on, the status bar is plain text (`80%`).
-
-**v1.1.0**
-
-- Battery percentage shows as plain text.
-- "Last Played" labels, and folder backgrounds are cached.
-
-**v1.0.0**
-
-- First Brick / Hammer build of this fork.
-
 ## Install
 
 1. Update stock TrimUI firmware to **1.1.1** for the Brick first.
