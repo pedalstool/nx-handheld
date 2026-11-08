@@ -181,7 +181,7 @@ static int Rewind_compress_state(const uint8_t* src, size_t* dest_len, int* is_k
 	int used_delta = 0;
 	if (rewind_ctx.has_prev_enc && rewind_ctx.prev_state_enc && rewind_ctx.delta_buf) {
 		xor_bytes(rewind_ctx.delta_buf, src, rewind_ctx.prev_state_enc, rewind_ctx.state_size);
-		compress_src = delta;
+		compress_src = rewind_ctx.delta_buf;
 		used_delta = 1;
 	}
 
@@ -601,7 +601,7 @@ int Rewind_step_back(void) {
 			// So: state_(N-1) = delta XOR state_N = delta XOR prev_state_dec
 			xor_bytes(rewind_ctx.state_buf, rewind_ctx.delta_buf, rewind_ctx.prev_state_dec, rewind_ctx.state_size);
 			// Update prev_state_dec to the state we just recovered (for next rewind step)
-			memcpy(rewind_ctx.prev_state_dec, result, state_size);
+			memcpy(rewind_ctx.prev_state_dec, rewind_ctx.state_buf, rewind_ctx.state_size);
 		} else {
 			// Delta frame but no previous state - this shouldn't happen with proper keyframe tracking
 			// Fall back to treating it as a full state (may produce incorrect results)
