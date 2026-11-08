@@ -12,6 +12,7 @@
 !skeleton/SYSTEM/osd-stock/*.zip
 
 build
+android
 releases
 squashfs-root
 toolchains

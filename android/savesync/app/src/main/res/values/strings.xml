@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">Save Sync</string>
-    <string name="hint">The folder must match the Brick Saves folder. GB/Tetris.srm on the Brick is GB/Tetris.srm here. The newer file wins. Same time leaves both alone. Set the clocks on both devices.</string>
-</resources>
