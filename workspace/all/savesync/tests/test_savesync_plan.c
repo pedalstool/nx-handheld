@@ -32,6 +32,14 @@ int main(void) {
 	assert(!savesync_is_save("GBA/Golden Sun (USA, Europe).gba"));
 	assert(!savesync_is_save("GBA/Golden Sun.gba"));
 	assert(!savesync_is_save("Golden Sun.zip"));
+	assert(savesync_console_ok("GBA/Golden Sun.sav"));
+	assert(savesync_console_ok("gb/Tetris.sav"));
+	assert(savesync_console_ok("GBC/Pokemon.srm"));
+	assert(!savesync_console_ok("NES/Mario.srm"));
+	assert(!savesync_console_ok("Golden Sun.sav"));
+	assert(savesync_sync_path("GBA/Golden Sun (USA, Europe).gba.sav"));
+	assert(!savesync_sync_path("GBA/Golden Sun.gba"));
+	assert(!savesync_sync_path("SNES/Game.srm"));
 
 	assert(savesync_path_ok("GB/Tetris.srm"));
 	assert(savesync_path_ok("GBA/Pokemon - Emerald.srm"));

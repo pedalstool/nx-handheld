@@ -67,6 +67,34 @@ bool savesync_is_save(const char* rel) {
 	return ends_ci(base, ".sav") || ends_ci(base, ".srm") || ends_ci(base, ".rtc");
 }
 
+static int tag_eq(const char* s, size_t n, const char* tag) {
+	size_t m = strlen(tag);
+	if (n != m)
+		return 0;
+	for (size_t i = 0; i < n; i++) {
+		char a = s[i];
+		if (a >= 'a' && a <= 'z')
+			a = (char)(a - 'a' + 'A');
+		if (a != tag[i])
+			return 0;
+	}
+	return 1;
+}
+
+bool savesync_console_ok(const char* rel) {
+	if (!rel || !rel[0])
+		return false;
+	const char* slash = strchr(rel, '/');
+	if (!slash || slash == rel)
+		return false;
+	size_t n = (size_t)(slash - rel);
+	return tag_eq(rel, n, "GB") || tag_eq(rel, n, "GBC") || tag_eq(rel, n, "GBA");
+}
+
+bool savesync_sync_path(const char* rel) {
+	return savesync_is_save(rel) && savesync_console_ok(rel);
+}
+
 bool savesync_path_ok(const char* rel) {
 	if (!rel || !rel[0] || rel[0] == '/')
 		return false;

@@ -31,6 +31,12 @@ bool savesync_path_ok(const char* rel);
 // clock file .rtc. A ROM such as .gba is not a save.
 bool savesync_is_save(const char* rel);
 
+// First folder is GB, GBC, or GBA. Other consoles stay on the device.
+bool savesync_console_ok(const char* rel);
+
+// A save under GB, GBC, or GBA.
+bool savesync_sync_path(const char* rel);
+
 // Percent-encode for the query string. '/' is left as the separator.
 // Returns bytes written excluding the NUL, or -1 if it does not fit.
 int savesync_encode_path(const char* rel, char* out, size_t cap);
