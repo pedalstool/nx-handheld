@@ -3,7 +3,25 @@
 #include "ma_rewind_budget.h"
 #include "ma_rewind_ring.h"
 #include <errno.h>
+#include <stdint.h>
 #include <lz4.h>
+
+// malloc'd state buffers are aligned. A word XOR is the same bytes as the
+// old per-byte loop, without a dependency per byte of a multi-megabyte state.
+static void xor_bytes(uint8_t* dst, const uint8_t* a, const uint8_t* b, size_t n) {
+	size_t i = 0;
+	if (((uintptr_t)dst | (uintptr_t)a | (uintptr_t)b) % sizeof(size_t) == 0) {
+		size_t* dw = (size_t*)dst;
+		const size_t* aw = (const size_t*)a;
+		const size_t* bw = (const size_t*)b;
+		size_t words = n / sizeof(size_t);
+		for (size_t w = 0; w < words; w++)
+			dw[w] = aw[w] ^ bw[w];
+		i = words * sizeof(size_t);
+	}
+	for (; i < n; i++)
+		dst[i] = a[i] ^ b[i];
+}
 
 // rewind implementation constants
 #define REWIND_ENTRY_SIZE_HINT 4096					   // assumed avg entry size for capacity calc
@@ -162,13 +180,7 @@ static int Rewind_compress_state(const uint8_t* src, size_t* dest_len, int* is_k
 	const uint8_t* compress_src = src;
 	int used_delta = 0;
 	if (rewind_ctx.has_prev_enc && rewind_ctx.prev_state_enc && rewind_ctx.delta_buf) {
-		size_t state_size = rewind_ctx.state_size;
-		uint8_t* delta = rewind_ctx.delta_buf;
-		const uint8_t* prev = rewind_ctx.prev_state_enc;
-		// Byte-by-byte XOR to avoid unaligned memory access issues
-		for (size_t i = 0; i < state_size; i++) {
-			delta[i] = src[i] ^ prev[i];
-		}
+		xor_bytes(rewind_ctx.delta_buf, src, rewind_ctx.prev_state_enc, rewind_ctx.state_size);
 		compress_src = delta;
 		used_delta = 1;
 	}
@@ -291,6 +303,11 @@ static int Rewind_init_apply(size_t state_size) {
 	int capture_ms = rewind_ctx.interval_ms;
 	if (capture_ms < frame_ms)
 		capture_ms = frame_ms;
+	// One snapshot a frame serializes the whole core state on the game thread.
+	// Three frames apart is still smooth and costs a third of that.
+	if (capture_ms < frame_ms * 3)
+		capture_ms = frame_ms * 3;
+	rewind_ctx.interval_ms = capture_ms;
 	// Play back at the capture cadence (match recorded speed) but never faster than native frame time
 	int playback_ms = capture_ms;
 	if (playback_ms < frame_ms)
@@ -582,14 +599,7 @@ int Rewind_step_back(void) {
 			// Delta decompression: XOR the delta with prev_state_dec to recover the actual state
 			// prev_state_dec holds the current state (state N), delta = state_N XOR state_(N-1)
 			// So: state_(N-1) = delta XOR state_N = delta XOR prev_state_dec
-			size_t state_size = rewind_ctx.state_size;
-			uint8_t* result = rewind_ctx.state_buf;
-			const uint8_t* delta = rewind_ctx.delta_buf;
-			const uint8_t* prev = rewind_ctx.prev_state_dec;
-			// Byte-by-byte XOR to avoid unaligned memory access issues
-			for (size_t i = 0; i < state_size; i++) {
-				result[i] = delta[i] ^ prev[i];
-			}
+			xor_bytes(rewind_ctx.state_buf, rewind_ctx.delta_buf, rewind_ctx.prev_state_dec, rewind_ctx.state_size);
 			// Update prev_state_dec to the state we just recovered (for next rewind step)
 			memcpy(rewind_ctx.prev_state_dec, result, state_size);
 		} else {

@@ -5,6 +5,7 @@
 #include "ma_rewind.h"
 #include "ma_avinfo.h"
 #include "ma_saves.h"
+#include "ma_audio.h"
 #include "ma_options.h"
 
 _Static_assert(SYNC_SRC_AUTO == AVSYNC_AUTO && SYNC_SRC_SCREEN == AVSYNC_SCREEN && SYNC_SRC_CORE == AVSYNC_CORE &&
@@ -155,5 +156,6 @@ void run_frame(void) {
 		}
 	}
 	limitFF();
+	Audio_flushPending();
 	State_resumePending();
 }

@@ -664,9 +664,49 @@ static void PLAT_getLedBrightnessPath(LightSettings* led, char* filepath, size_t
 	}
 }
 
+// Ambient mode rewrites every zone on each poll. The sysfs nodes only need
+// a write when that field actually changed.
+static int led_unchanged(const char* name, int field, int value) {
+	enum { LED_SLOTS = 8, LED_FIELDS = 6 };
+	static char names[LED_SLOTS][8];
+	static int values[LED_SLOTS][LED_FIELDS];
+	static unsigned written[LED_SLOTS];
+	static int used[LED_SLOTS];
+	if (!name || field < 0 || field >= LED_FIELDS)
+		return 0;
+	int slot = -1;
+	int free_slot = -1;
+	for (int i = 0; i < LED_SLOTS; i++) {
+		if (!used[i]) {
+			if (free_slot < 0)
+				free_slot = i;
+			continue;
+		}
+		if (strcmp(names[i], name) == 0) {
+			slot = i;
+			break;
+		}
+	}
+	if (slot < 0) {
+		if (free_slot < 0)
+			return 0;
+		slot = free_slot;
+		used[slot] = 1;
+		written[slot] = 0;
+		snprintf(names[slot], sizeof(names[slot]), "%s", name);
+	}
+	if ((written[slot] & (1u << field)) && values[slot][field] == value)
+		return 1;
+	written[slot] |= 1u << field;
+	values[slot][field] = value;
+	return 0;
+}
+
 static void PLAT_writeLedBrightness(LightSettings* led, int value) {
 	if (strcmp(led->filename, "f2") == 0)
 		return; // f2 shares f1's node, nothing of its own to write
+	if (led_unchanged(led->filename, 0, value))
+		return;
 
 	char filepath[256];
 	PLAT_getLedBrightnessPath(led, filepath, sizeof(filepath));
@@ -685,6 +725,8 @@ void PLAT_setLedBrightness(LightSettings* led) {
 	PLAT_writeLedBrightness(led, led->brightness);
 }
 void PLAT_setLedEffect(LightSettings* led) {
+	if (led_unchanged(led->filename, 1, led->effect))
+		return;
 	char filepath[256];
 	FILE* file;
 	snprintf(filepath, sizeof(filepath), "/sys/class/led_anim/effect_%s", led->filename);
@@ -695,6 +737,8 @@ void PLAT_setLedEffect(LightSettings* led) {
 	}
 }
 void PLAT_setLedEffectCycles(LightSettings* led) {
+	if (led_unchanged(led->filename, 2, led->cycles))
+		return;
 	char filepath[256];
 	FILE* file;
 	snprintf(filepath, sizeof(filepath), "/sys/class/led_anim/effect_cycles_%s", led->filename);
@@ -705,6 +749,8 @@ void PLAT_setLedEffectCycles(LightSettings* led) {
 	}
 }
 void PLAT_setLedEffectSpeed(LightSettings* led) {
+	if (led_unchanged(led->filename, 3, led->speed))
+		return;
 	char filepath[256];
 	FILE* file;
 	snprintf(filepath, sizeof(filepath), "/sys/class/led_anim/effect_duration_%s", led->filename);
@@ -715,6 +761,8 @@ void PLAT_setLedEffectSpeed(LightSettings* led) {
 	}
 }
 void PLAT_setLedColor(LightSettings* led) {
+	if (led_unchanged(led->filename, 4, led->color1))
+		return;
 	char filepath[256];
 	FILE* file;
 	snprintf(filepath, sizeof(filepath), "/sys/class/led_anim/effect_rgb_hex_%s", led->filename);

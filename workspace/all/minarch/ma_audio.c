@@ -7,16 +7,42 @@
 #include <alsa/asoundlib.h>
 #include <pthread.h>
 
+// Cores that push one sample at a time used to resample that one sample,
+// lock and all. A short batch is one resample per retro_run's worth of audio.
+static SND_Frame audio_pending[64];
+static int audio_pending_n;
+static int audio_pending_fixed = -1;
+
+static void audio_flush_pending(void) {
+	if (audio_pending_n <= 0)
+		return;
+	if (audio_pending_fixed)
+		SND_batchSamples_fixed_rate(audio_pending, (size_t)audio_pending_n);
+	else
+		SND_batchSamples(audio_pending, (size_t)audio_pending_n);
+	audio_pending_n = 0;
+}
+
+void Audio_flushPending(void) {
+	audio_flush_pending();
+}
+
 void audio_sample_callback(int16_t left, int16_t right) {
 	EmuTime_countAudio(1);
-	if (rewinding && !rewind_ctx.audio)
+	if (rewinding && !rewind_ctx.audio) {
+		audio_flush_pending();
 		return;
+	}
 	if (!fast_forward || ff_audio) {
-		if (use_core_fps || fast_forward) {
-			SND_batchSamples_fixed_rate(&(const SND_Frame){left, right}, 1);
-		} else {
-			SND_batchSamples(&(const SND_Frame){left, right}, 1);
-		}
+		int fixed = (use_core_fps || fast_forward) ? 1 : 0;
+		if (audio_pending_n && audio_pending_fixed != fixed)
+			audio_flush_pending();
+		audio_pending_fixed = fixed;
+		audio_pending[audio_pending_n++] = (SND_Frame){left, right};
+		if (audio_pending_n == (int)(sizeof(audio_pending) / sizeof(audio_pending[0])))
+			audio_flush_pending();
+	} else {
+		audio_flush_pending();
 	}
 }
 // NX_AUDIO_BLOCK=1 (set by a pak's launch.sh): for cores that run emulation
@@ -68,6 +94,7 @@ void Audio_onSinkChanged(int sink_type) {
 void Audio_checkAndResetIfNeeded(void) {
 	if (resetAudio) {
 		resetAudio = false;
+		audio_flush_pending();
 		SND_resetAudio(core.sample_rate, core.fps);
 		SetVolume(GetVolume());
 	}

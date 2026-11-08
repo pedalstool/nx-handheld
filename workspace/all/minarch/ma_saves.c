@@ -92,6 +92,23 @@ void SRAM_read(void) {
 	rzipstream_close(sram_file);
 }
 
+// The save itself is already fsynced. sync() would flush every dirty page
+// on the card and stall the game thread. The directory entry is the part
+// a rename still needs.
+static void fsync_parent(const char* file) {
+	char dir[MAX_PATH];
+	snprintf(dir, sizeof(dir), "%s", file);
+	char* slash = strrchr(dir, '/');
+	if (!slash)
+		return;
+	*slash = '\0';
+	int fd = open(dir, O_RDONLY | O_DIRECTORY);
+	if (fd < 0)
+		return;
+	fsync(fd);
+	close(fd);
+}
+
 void SRAM_write(void) {
 	size_t sram_size = core.get_memory_size(RETRO_MEMORY_SAVE_RAM);
 	if (!sram_size)
@@ -106,7 +123,7 @@ void SRAM_write(void) {
 	// srm is compressed; the other formats are raw
 	if (!writeSaveFile(filename, sram, sram_size, CFG_getSaveFormat() == SAVE_FORMAT_SRM))
 		LOG_error("Error writing SRAM data to file: %s (%s)\n", filename, strerror(errno));
-	sync();
+	fsync_parent(filename);
 }
 
 ///////////////////////////////////////
@@ -147,8 +164,8 @@ void RTC_write(void) {
 	void* rtc = core.get_memory_data(RETRO_MEMORY_RTC);
 	if (!writeSaveFile(filename, rtc, rtc_size, 0))
 		LOG_error("Error writing RTC data to file: %s (%s)\n", filename, strerror(errno));
-
-	sync();
+	else
+		fsync_parent(filename);
 }
 
 ///////////////////////////////////////
@@ -301,7 +318,8 @@ error:
 	if (state)
 		free(state);
 
-	sync();
+	if (success)
+		fsync_parent(filename);
 	fast_forward = was_ff;
 	return success;
 }
@@ -516,6 +534,11 @@ void State_resumePending(void) {
 	if (pending_resume_slot < 0)
 		return;
 	if (refused_state) {
+		// A core that is not ready yet rejects the state. Retrying every
+		// frame serializes it for several seconds. Same cadence as the file path.
+		if (pending_resume_tries > 0 && --pending_resume_wait > 0)
+			return;
+		pending_resume_wait = RESUME_RETRY_EVERY;
 		if (State_unserialize(refused_state, refused_data_size, refused_state_size)) {
 			EmuTime_reset(); // the loaded state starts a new emulated timeline
 			Rewind_on_state_change();

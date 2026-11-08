@@ -1161,14 +1161,10 @@ void GFX_flip_scheduled(SDL_Surface* screen, double slot_s, double target_fps) {
 		// The OS scheduling algorithm cannot guarantee that
 		// the sleep will last the exact amount of requested time.
 		// We sleep as much as we can using the OS primitive.
-		const useconds_t min_waiting_time = 2000;
-		if (time_to_sleep_us > min_waiting_time) {
-			usleep(time_to_sleep_us - min_waiting_time);
-		}
-
-		while (SDL_GetPerformanceCounter() < time_of_frame) {
-			// nothing...
-		}
+		// Sleep the remainder. A tight spin here burned a core for up to 2 ms,
+		// and the swap below still waits for vblank.
+		if (time_to_sleep_us > 1000)
+			usleep(time_to_sleep_us);
 	}
 	PLAT_GL_Swap();
 
@@ -4679,7 +4675,16 @@ void LEDS_setProfile(int profile) {
 
 	// The OSD LED toggle owns this flag: while it exists the user has
 	// explicitly switched the LEDs off, so no profile may relight them.
-	if (profile != LIGHT_PROFILE_OFF && access(LEDS_DISABLED_PATH, F_OK) == 0)
+	// The file is checked a few times a second. input_poll_callback reaches
+	// this on every core poll, and a stat per poll is enough on its own.
+	static int leds_forced_off = 0;
+	static uint32_t leds_forced_checked = 0;
+	uint32_t leds_now = SDL_GetTicks();
+	if (leds_now - leds_forced_checked >= 250) {
+		leds_forced_off = access(LEDS_DISABLED_PATH, F_OK) == 0;
+		leds_forced_checked = leds_now;
+	}
+	if (profile != LIGHT_PROFILE_OFF && leds_forced_off)
 		profile = LIGHT_PROFILE_OFF;
 
 	LightSettings* new_lights = NULL;
